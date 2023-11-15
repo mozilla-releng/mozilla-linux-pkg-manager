@@ -5,6 +5,10 @@ description = "`mozilla-releng/mozilla-deb-pkg-manager` is a Python tool for man
 authors = ["Mozilla Release Engineering <release@mozilla.com>"]
 license = "MPL-2.0"
 readme = "README.md"
+packages = [{include = "mozilla_deb_pkg_manager", from = "src"}]
+
+[tool.poetry.scripts]
+mozilla-deb-pkg-manager = 'mozilla_deb_pkg_manager.cli:main'
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -31,7 +35,7 @@ xfail_strict = true
 [tool.coverage.run]
 parallel = true
 branch = true
-source = ["src/mozilla-deb-pkg-manager/"]
+source = ["src/mozilla_deb_pkg_manager/"]
 
 [tool.ruff]
 select = [
@@ -47,7 +51,7 @@ ignore = [
 target-version = "py311"
 
 [tool.ruff.isort]
-known-first-party = ["mozilla-deb-pkg-manager"]
+known-first-party = ["mozilla_deb_pkg_manager"]
 
 [build-system]
 requires = ["poetry-core"]
