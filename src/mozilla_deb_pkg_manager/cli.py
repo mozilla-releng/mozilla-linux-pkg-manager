@@ -1,7 +1,5 @@
 import argparse
 
-# from datetime import datetime, timedelta
-
 
 def delete_nightly_versions(retention_days):
     # Logic to delete old versions in the nightly channel based on retention days
@@ -10,7 +8,11 @@ def delete_nightly_versions(retention_days):
 
 def main():
     parser = argparse.ArgumentParser(description="mozilla-deb-pkg-manager")
-    subparsers = parser.add_subparsers(dest="command")
+    subparsers = parser.add_subparsers(
+        dest="command",
+        required=True,
+        help='Sub-commands (currently only "clean-up" is supported)',
+    )
 
     # Subparser for the 'clean-up' command
     clean_up_parser = subparsers.add_parser(
