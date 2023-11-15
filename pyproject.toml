@@ -12,6 +12,10 @@ mozilla-deb-pkg-manager = 'mozilla_deb_pkg_manager.cli:main'
 
 [tool.poetry.dependencies]
 python = "^3.11"
+aiohttp = "^3.8.6"
+pyyaml = "^6.0.1"
+mozilla-version = "^2.1.0"
+google-cloud-artifact-registry = "^1.9.0"
 
 [tool.poetry.group.test.dependencies]
 coverage = "^7.3.2"
