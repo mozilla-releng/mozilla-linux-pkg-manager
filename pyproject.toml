@@ -1,0 +1,54 @@
+[tool.poetry]
+name = "mozilla-deb-pkg-manager"
+version = "0.1.0"
+description = "`mozilla-releng/mozilla-deb-pkg-manager` is a Python tool for managing Mozilla `.deb` packages."
+authors = ["Mozilla Release Engineering <release@mozilla.com>"]
+license = "MPL-2.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+[tool.poetry.group.test.dependencies]
+coverage = "^7.3.2"
+pytest = "^7.4.3"
+pytest-mock = "^3.12.0"
+responses = "^0.24.1"
+tox = "^4.11.3"
+
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "<7"
+sphinx-autobuild = "^2021.3.14"
+sphinx-book-theme = "^1.0.1"
+
+[tool.black]
+line-length = 88
+
+[tool.pytest.ini_options]
+xfail_strict = true
+
+[tool.coverage.run]
+parallel = true
+branch = true
+source = ["src/mozilla-deb-pkg-manager/"]
+
+[tool.ruff]
+select = [
+    "E", "W",       # pycodestyle
+    "F",            # pyflakes
+    "I",            # isort
+    "PLC", "PLE",   # pylint
+    "UP",           # pyupgrade
+]
+ignore = [
+    "E501",  # let black handle line-length
+]
+target-version = "py311"
+
+[tool.ruff.isort]
+known-first-party = ["mozilla-deb-pkg-manager"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
