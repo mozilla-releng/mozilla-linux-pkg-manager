@@ -22,7 +22,6 @@ To run `mozilla-deb-pkg-manager`, use Poetry with the following command:
 ```bash
 poetry run mozilla-deb-pkg-manager clean-up --channel [CHANNEL] --retention-days [DAYS]
 ```
-Replace `[CHANNEL]` with the specific package channel (e.g., `nightly`, `release`, `beta`) and `[DAYS]` with the number of days for the retention period for `nightly` packages.
 
 ### Parameters
 - `--channel`: Specifies the package channel (e.g., `nightly`, `release`, `beta`). Currently, only `nightly` is supported.
