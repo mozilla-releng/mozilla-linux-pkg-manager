@@ -96,9 +96,15 @@ def main():
         "clean-up", help="Clean up package versions."
     )
     clean_up_parser.add_argument(
+        "--product",
+        type=str,
+        help="Product in the packages (i.e. firefox)",
+        required=True,
+    )
+    clean_up_parser.add_argument(
         "--channel",
         type=str,
-        help="Channel of the packages (e.g., nightly, release, beta)",
+        help="Channel of the packages (e.g. nightly, release, beta)",
         required=True,
     )
     clean_up_parser.add_argument(
@@ -110,6 +116,8 @@ def main():
     args = parser.parse_args()
 
     if args.command == "clean-up":
+        if args.product != "firefox":
+            raise ValueError("firefox is the only supported product")
         if args.channel == "nightly":
             if args.retention_days is None:
                 raise ValueError(

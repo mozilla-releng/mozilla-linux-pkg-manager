@@ -6,7 +6,8 @@
 
 # mozilla-gcp-ar-pkg-manager
 
-`mozilla-releng/mozilla-gcp-ar-pkg-manager` is a Python tool for managing Mozilla product packages hosted in software repositories. It can be used to clean-up obsolete Firefox Nightly versions.
+`mozilla-releng/mozilla-gcp-ar-pkg-manager` is a Python tool for managing Mozilla product packages hosted in Linux software repositories.
+It can be used to clean-up obsolete Firefox Nightly versions.
 
 ## Requirements
 - Python 3.11 or higher
@@ -20,18 +21,19 @@
 ### Running `mozilla-gcp-ar-pkg-manager`
 To run `mozilla-gcp-ar-pkg-manager`, use Poetry with the following command:
 ```bash
-poetry run mozilla-gcp-ar-pkg-manager clean-up --channel [CHANNEL] --retention-days [DAYS]
+poetry run mozilla-gcp-ar-pkg-manager clean-up --product [PRODUCT] --channel [CHANNEL] --retention-days [DAYS]
 ```
 
 ### Parameters
-- `--channel`: Specifies the package channel (e.g., `nightly`, `release`, `beta`). Currently, only `nightly` is supported.
+- `--product`: Specifies the Mozilla product to manage (e.g. `nightly`, `release`, `beta`). Currently, only `firefox` is supported.
+- `--channel`: Specifies the package channel (e.g. `nightly`, `release`, `beta`). Currently, only `nightly` is supported.
 - `--retention-days`: Sets the retention period in days for packages in the nightly channel. This parameter is only supported on the `nightly` channel.
 
 ### Example
 To clean up nightly packages that are older than 7 days:
 
 ```bash
-poetry run mozilla-gcp-ar-pkg-manager clean-up --channel nightly --retention-days 7
+poetry run mozilla-gcp-ar-pkg-manager clean-up --product firefox --channel nightly --retention-days 7
 ```
 
 ## Building and Installing a Python Wheel
@@ -50,5 +52,5 @@ The `mozilla-gcp-ar-pkg-manager` package can be packaged into a wheel file for d
 After installation, the package can be used from anywhere on your system, provided you are running the Python interpreter where it was installed. For example:
 
 ```bash
-mozilla-gcp-ar-pkg-manager clean-up --channel nightly --retention-days 5
+mozilla-gcp-ar-pkg-manager clean-up --product firefox --channel nightly --retention-days 3
 ```
