@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = "mozilla-deb-pkg-manager"
+project = "mozilla-gcp-ar-pkg-manager"
 copyright = "2023"
 author = "Mozilla Release Engineering <release@mozilla.com>"
 

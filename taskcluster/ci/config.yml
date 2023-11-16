@@ -3,10 +3,10 @@ trust-domain: "mozilla"
 task-priority: low
 
 taskgraph:
-  cached-task-prefix: "mozilla.v2.mozilla-deb-pkg-manager"
+  cached-task-prefix: "mozilla.v2.mozilla-gcp-ar-pkg-manager"
   repositories:
-    mozilla-deb-pkg-manager:
-      name: "mozilla-deb-pkg-manager"
+    mozilla-gcp-ar-pkg-manager:
+      name: "mozilla-gcp-ar-pkg-manager"
 
 workers:
   aliases:
