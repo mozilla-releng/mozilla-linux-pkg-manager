@@ -1,14 +1,14 @@
 [tool.poetry]
-name = "mozilla-gcp-ar-pkg-manager"
+name = "mozilla-linux-pkg-manager"
 version = "0.1.0"
-description = "`mozilla-releng/mozilla-gcp-ar-pkg-manager` is a Python tool for managing Mozilla `.deb` packages."
+description = "`mozilla-releng/mozilla-linux-pkg-manager` is a Python tool for managing Mozilla `.deb` packages."
 authors = ["Mozilla Release Engineering <release@mozilla.com>"]
 license = "MPL-2.0"
 readme = "README.md"
-packages = [{include = "mozilla_gcp_ar_pkg_manager", from = "src"}]
+packages = [{include = "mozilla_linux_pkg_manager", from = "src"}]
 
 [tool.poetry.scripts]
-mozilla-gcp-ar-pkg-manager = 'mozilla_gcp_ar_pkg_manager.cli:main'
+mozilla-linux-pkg-manager = 'mozilla_linux_pkg_manager.cli:main'
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -39,7 +39,7 @@ xfail_strict = true
 [tool.coverage.run]
 parallel = true
 branch = true
-source = ["src/mozilla_gcp_ar_pkg_manager/"]
+source = ["src/mozilla_linux_pkg_manager/"]
 
 [tool.ruff]
 select = [
@@ -55,7 +55,7 @@ ignore = [
 target-version = "py311"
 
 [tool.ruff.isort]
-known-first-party = ["mozilla_gcp_ar_pkg_manager"]
+known-first-party = ["mozilla_linux_pkg_manager"]
 
 [build-system]
 requires = ["poetry-core"]

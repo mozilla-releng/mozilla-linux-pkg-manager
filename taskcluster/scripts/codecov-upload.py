@@ -17,7 +17,7 @@ def fetch_secret(secret_name):
     return r.json()["secret"]
 
 
-token = fetch_secret("project/releng/mozilla/mozilla-gcp-ar-pkg-manager/build/level-1/ci")[
+token = fetch_secret("project/releng/mozilla/mozilla-linux-pkg-manager/build/level-1/ci")[
     "codecov_api_token"
 ]
 uploader = FETCHES_DIR / "codecov"

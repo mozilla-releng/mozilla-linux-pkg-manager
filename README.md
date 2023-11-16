@@ -1,12 +1,12 @@
-[![Task Status](https://firefox-ci-tc.services.mozilla.com/api/github/v1/repository/mozilla-releng/mozilla-gcp-ar-pkg-manager/main/badge.svg)](https://firefox-ci-tc.services.mozilla.com/api/github/v1/repository/mozilla-releng/mozilla-gcp-ar-pkg-manager/main/latest)
-[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/mozilla-releng/mozilla-gcp-ar-pkg-manager/main.svg)](https://results.pre-commit.ci/latest/github/mozilla-releng/mozilla-gcp-ar-pkg-manager/main)
-[![Code Coverage](https://codecov.io/gh/mozilla-releng/mozilla-gcp-ar-pkg-manager/branch/main/graph/badge.svg?token=GJIV52ZQNP)](https://codecov.io/gh/mozilla-releng/mozilla-gcp-ar-pkg-manager)
-[![Documentation Status](https://readthedocs.org/projects/mozilla-gcp-ar-pkg-manager/badge/?version=latest)](https://mozilla-gcp-ar-pkg-manager.readthedocs.io/en/latest/?badge=latest)
+[![Task Status](https://firefox-ci-tc.services.mozilla.com/api/github/v1/repository/mozilla-releng/mozilla-linux-pkg-manager/main/badge.svg)](https://firefox-ci-tc.services.mozilla.com/api/github/v1/repository/mozilla-releng/mozilla-linux-pkg-manager/main/latest)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/mozilla-releng/mozilla-linux-pkg-manager/main.svg)](https://results.pre-commit.ci/latest/github/mozilla-releng/mozilla-linux-pkg-manager/main)
+[![Code Coverage](https://codecov.io/gh/mozilla-releng/mozilla-linux-pkg-manager/branch/main/graph/badge.svg?token=GJIV52ZQNP)](https://codecov.io/gh/mozilla-releng/mozilla-linux-pkg-manager)
+[![Documentation Status](https://readthedocs.org/projects/mozilla-linux-pkg-manager/badge/?version=latest)](https://mozilla-linux-pkg-manager.readthedocs.io/en/latest/?badge=latest)
 [![License](https://img.shields.io/badge/license-MPL%202.0-orange.svg)](http://mozilla.org/MPL/2.0)
 
-# mozilla-gcp-ar-pkg-manager
+# mozilla-linux-pkg-manager
 
-`mozilla-releng/mozilla-gcp-ar-pkg-manager` is a Python tool for managing Mozilla product packages hosted in Linux software repositories.
+`mozilla-releng/mozilla-linux-pkg-manager` is a Python tool for managing Mozilla product packages hosted in Linux software repositories.
 It can be used to clean-up obsolete Firefox Nightly versions.
 
 ## Requirements
@@ -15,13 +15,13 @@ It can be used to clean-up obsolete Firefox Nightly versions.
 
 ## Installation
 1. **Install Poetry**: If not already installed, install Poetry by following the instructions from the [official Poetry website](https://python-poetry.org/docs/).
-2. **Clone the Repository**: Clone the `mozilla-gcp-ar-pkg-manager` repository using the command `git clone https://github.com/mozilla-releng/mozilla-gcp-ar-pkg-manager.git`.
+2. **Clone the Repository**: Clone the `mozilla-linux-pkg-manager` repository using the command `git clone https://github.com/mozilla-releng/mozilla-linux-pkg-manager.git`.
 3. **Install Dependencies**: Navigate to the repository's root directory and run `poetry install` to install the required dependencies.
 
-### Running `mozilla-gcp-ar-pkg-manager`
-To run `mozilla-gcp-ar-pkg-manager`, use Poetry with the following command:
+### Running `mozilla-linux-pkg-manager`
+To run `mozilla-linux-pkg-manager`, use Poetry with the following command:
 ```bash
-poetry run mozilla-gcp-ar-pkg-manager clean-up --product [PRODUCT] --channel [CHANNEL] --retention-days [DAYS]
+poetry run mozilla-linux-pkg-manager clean-up --product [PRODUCT] --channel [CHANNEL] --retention-days [DAYS]
 ```
 
 ### Parameters
@@ -33,12 +33,12 @@ poetry run mozilla-gcp-ar-pkg-manager clean-up --product [PRODUCT] --channel [CH
 To clean up nightly packages that are older than 7 days:
 
 ```bash
-poetry run mozilla-gcp-ar-pkg-manager clean-up --product firefox --channel nightly --retention-days 7
+poetry run mozilla-linux-pkg-manager clean-up --product firefox --channel nightly --retention-days 7
 ```
 
 ## Building and Installing a Python Wheel
 
-The `mozilla-gcp-ar-pkg-manager` package can be packaged into a wheel file for distribution and installation.
+The `mozilla-linux-pkg-manager` package can be packaged into a wheel file for distribution and installation.
 
 ### Building the Wheel
 1. **Navigate to the Project Directory**: Open your terminal and navigate to the directory where your project is located.
@@ -52,5 +52,5 @@ The `mozilla-gcp-ar-pkg-manager` package can be packaged into a wheel file for d
 After installation, the package can be used from anywhere on your system, provided you are running the Python interpreter where it was installed. For example:
 
 ```bash
-mozilla-gcp-ar-pkg-manager clean-up --product firefox --channel nightly --retention-days 3
+mozilla-linux-pkg-manager clean-up --product firefox --channel nightly --retention-days 3
 ```

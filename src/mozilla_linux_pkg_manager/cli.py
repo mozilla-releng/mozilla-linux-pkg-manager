@@ -10,7 +10,7 @@ import yaml
 from mozilla_version.gecko import GeckoVersion
 
 logging.basicConfig(
-    format="%(asctime)s - mozilla-gcp-ar-pkg-manager - %(levelname)s - %(message)s",
+    format="%(asctime)s - mozilla-linux-pkg-manager - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
 
@@ -84,7 +84,7 @@ async def delete_nightly_versions(retention_days):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="mozilla-gcp-ar-pkg-manager")
+    parser = argparse.ArgumentParser(description="mozilla-linux-pkg-manager")
     subparsers = parser.add_subparsers(
         dest="command",
         required=True,

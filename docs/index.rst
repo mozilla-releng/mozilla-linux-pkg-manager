@@ -1,7 +1,7 @@
-mozilla-gcp-ar-pkg-manager
+mozilla-linux-pkg-manager
 =======================
 
-`mozilla-releng/mozilla-gcp-ar-pkg-manager` is a Python tool for managing Mozilla `.deb` packages.
+`mozilla-releng/mozilla-linux-pkg-manager` is a Python tool for managing Mozilla `.deb` packages.
 
 
 Table of Contents
