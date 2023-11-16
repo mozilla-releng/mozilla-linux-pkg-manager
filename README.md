@@ -6,7 +6,7 @@
 
 # mozilla-gcp-ar-pkg-manager
 
-`mozilla-releng/mozilla-gcp-ar-pkg-manager` is a Python tool for managing Mozilla `.deb` packages. It can be used to clean-up obsolete Firefox Nightly versions from the Mozilla APT repository.
+`mozilla-releng/mozilla-gcp-ar-pkg-manager` is a Python tool for managing Mozilla product packages hosted in software repositories. It can be used to clean-up obsolete Firefox Nightly versions.
 
 ## Requirements
 - Python 3.11 or higher
