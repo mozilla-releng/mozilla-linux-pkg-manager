@@ -1,5 +1,5 @@
 mozilla-linux-pkg-manager
-=======================
+=========================
 
 `mozilla-releng/mozilla-linux-pkg-manager` is a Python tool for managing Mozilla `.deb` packages.
 
