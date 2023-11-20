@@ -60,3 +60,40 @@ To clean up nightly .deb packages that are older than 3 days:
 ```bash
 mozilla-linux-pkg-manager clean-up --product firefox --channel nightly --format deb --retention-days 3
 ```
+
+## Docker
+
+The `mozilla-linux-pkg-manager` can also be run as a Docker container. This section guides you through building a Docker image and running the container.
+
+### Building the Docker Image
+
+First, export the desired image name as an environment variable:
+
+```bash
+export IMAGE_NAME=mozilla-linux-pkg-manager
+```
+
+Then, build the Docker image:
+
+```bash
+docker build -t $IMAGE_NAME .
+```
+
+This command builds a Docker image with the tag specified in `$IMAGE_NAME`, based on the instructions in your Dockerfile.
+
+### Running the Docker Container
+
+To run the `mozilla-linux-pkg-manager` in a Docker container, you need to set the Google Application Credentials and mount them as a volume in the container. Replace `[FILE_NAME].json` with the name of your Google Application Credentials file and ensure the path to the credentials file is correctly set in the `GOOGLE_APPLICATION_CREDENTIALS` environment variable.
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/google/application/credentials/[FILE_NAME].json
+docker run \
+   -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/[FILE_NAME].json \
+   -v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/keys/[FILE_NAME].json:ro \
+   $IMAGE_NAME clean-up --product firefox --channel nightly --format deb --retention-days 3
+```
+
+In this command:
+- The `-e` flag sets the `GOOGLE_APPLICATION_CREDENTIALS` environment variable inside the container.
+- The `-v` flag mounts the credentials file from your host system to the container. 
+- The last line specifies the command and its arguments to be executed inside the container.
