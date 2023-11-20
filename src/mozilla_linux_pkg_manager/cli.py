@@ -108,16 +108,36 @@ def main():
         required=True,
     )
     clean_up_parser.add_argument(
+        "--format",
+        type=str,
+        help="The package format (i.e. deb)",
+        required=True,
+    )
+    clean_up_parser.add_argument(
         "--retention-days",
         type=int,
         help="Retention period in days for packages in the nightly channel",
     )
+    clean_up_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Do a no-op run and print out a summary of the operations that will be executed",
+    )
 
     args = parser.parse_args()
+
+    if args.dry_run:
+        logging.info(
+            "The dry-run mode is enabled. Doing a no-op run!"
+        )
+
+    logging.info(f"args:\n{pformat(vars(args))}")
 
     if args.command == "clean-up":
         if args.product != "firefox":
             raise ValueError("firefox is the only supported product")
+        if args.format != "deb":
+            raise ValueError("deb is the only supported format")
         if args.channel == "nightly":
             if args.retention_days is None:
                 raise ValueError(
