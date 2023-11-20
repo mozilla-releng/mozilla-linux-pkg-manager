@@ -13,7 +13,9 @@ It can be used to clean-up obsolete Firefox Nightly versions.
 - Python 3.11 or higher
 - Poetry (for dependency management)
 
-## Installation
+## Development
+
+### Installing `mozilla-linux-pkg-manager`
 1. **Install Poetry**: If not already installed, install Poetry by following the instructions from the [official Poetry website](https://python-poetry.org/docs/).
 2. **Clone the Repository**: Clone the `mozilla-linux-pkg-manager` repository using the command `git clone https://github.com/mozilla-releng/mozilla-linux-pkg-manager.git`.
 3. **Install Dependencies**: Navigate to the repository's root directory and run `poetry install` to install the required dependencies.
@@ -21,19 +23,20 @@ It can be used to clean-up obsolete Firefox Nightly versions.
 ### Running `mozilla-linux-pkg-manager`
 To run `mozilla-linux-pkg-manager`, use Poetry with the following command:
 ```bash
-poetry run mozilla-linux-pkg-manager clean-up --product [PRODUCT] --channel [CHANNEL] --retention-days [DAYS]
+poetry run mozilla-linux-pkg-manager clean-up [-h] --product PRODUCT --channel CHANNEL --format FORMAT [--retention-days RETENTION_DAYS] [--dry-run]
 ```
-
-### Parameters
+#### Parameters
 - `--product`: Specifies the Mozilla product to manage (e.g. `nightly`, `release`, `beta`). Currently, only `firefox` is supported.
 - `--channel`: Specifies the package channel (e.g. `nightly`, `release`, `beta`). Currently, only `nightly` is supported.
+- `--format`: The package format (i.e. deb). Currently, only `deb` is supported.
 - `--retention-days`: Sets the retention period in days for packages in the nightly channel. This parameter is only supported on the `nightly` channel.
+- `--dry-run`: Tells the script to do a no-op run and print out a summary of the operations that will be executed.
 
-### Example
-To clean up nightly packages that are older than 7 days:
+#### Example
+To clean up the nightly .deb packages that are older than 7 days:
 
 ```bash
-poetry run mozilla-linux-pkg-manager clean-up --product firefox --channel nightly --retention-days 7
+poetry run mozilla-linux-pkg-manager clean-up --product firefox --channel nightly --format deb --retention-days 7
 ```
 
 ## Building and Installing a Python Wheel
@@ -49,8 +52,11 @@ The `mozilla-linux-pkg-manager` package can be packaged into a wheel file for di
 2. **Install the Wheel File**: Use `pip install [wheel-file-name]` to install the package. Replace `[wheel-file-name]` with the actual name of the wheel file generated during the build process.
 
 ### Using the Installed Package
-After installation, the package can be used from anywhere on your system, provided you are running the Python interpreter where it was installed. For example:
+After installation, the package can be used from anywhere on your system, provided you are running the Python interpreter where it was installed.
+
+#### Example
+To clean up nightly .deb packages that are older than 3 days:
 
 ```bash
-mozilla-linux-pkg-manager clean-up --product firefox --channel nightly --retention-days 3
+mozilla-linux-pkg-manager clean-up --product firefox --channel nightly --format deb --retention-days 3
 ```
