@@ -177,9 +177,9 @@ tasks:
                   payload:
                       $let:
                           normProject:
-                              $eval: 'join(split(project, "-"), "_")'
+                              $eval: 'project'
                           normProjectUpper:
-                              $eval: 'uppercase(join(split(project, "-"), "_"))'
+                              $eval: 'uppercase(project)'
                       in:
                           env:
                               # run-task uses these to check out the source; the inputs to
@@ -217,7 +217,7 @@ tasks:
 
                           command:
                               - run-task
-                              - '--${normProject}_checkout=/builds/worker/checkouts/src'
+                              - '--${normProject}-checkout=/builds/worker/checkouts/src'
                               - '--'
                               - bash
                               - -cx
