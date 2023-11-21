@@ -205,59 +205,60 @@ async def delete_nightly_versions(args):
     url = f"https://{args.region}-apt.pkg.dev/projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/dists/{args.repository}"
     normalized_url = f"{url}/" if not url.endswith("/") else url
     release_url = urljoin(normalized_url, "Release")
-    try:
-        logging.info(f"Fetching raw_release_data at {url}")
-        raw_release_data = await retry_async(
-            fetch_url,
-            args=[release_url],
-            attempts=3,
-        )
-        parsed_release_data = yaml.safe_load(raw_release_data)
-        logging.info(f"parsed_release_data:\n{pformat(parsed_release_data)}")
-        architectures = parsed_release_data["Architectures"].split()
-        package_data_promises = []
-        for architecture in architectures:
-            pkg_url = f"{normalized_url}main/binary-{architecture}/Packages"
-            package_data_promises.append(
-                retry_async(
-                    fetch_url,
-                    args=[pkg_url],
-                    attempts=3,
-                )
+    logging.info(f"Fetching raw_release_data at {url}")
+    raw_release_data = await retry_async(
+        fetch_url,
+        args=[release_url],
+        attempts=3,
+    )
+    parsed_release_data = yaml.safe_load(raw_release_data)
+    logging.info(f"parsed_release_data:\n{pformat(parsed_release_data)}")
+    architectures = parsed_release_data["Architectures"].split()
+    logging.info(f"architectures:{pformat(architectures)}")
+    package_data_promises = []
+    for architecture in architectures:
+        pkg_url = f"{normalized_url}main/binary-{architecture}/Packages"
+        package_data_promises.append(
+            retry_async(
+                fetch_url,
+                args=[pkg_url],
+                attempts=3,
             )
-        package_data_results = await asyncio.gather(*package_data_promises)
-        package_data = []
-        for architecture, package_data_result in zip(
-            architectures, package_data_results
-        ):
-            parsed_package_data = [
-                parse_key_value_block(raw_package_data)
-                for raw_package_data in package_data_result.split("\n\n")
-            ]
-            package_data.extend(parsed_package_data)
-        nightly_package_data = [
-            package for package in package_data if package["Gecko-Version"].is_nightly
-        ]
-        now = datetime.now()
-        expired_nightly_packages = [
-            package
-            for package in nightly_package_data
-            if now - package["Moz-Build-Date"] > timedelta(days=args.retention_days)
-        ]
-        logging.info(
-            f"Found {format(len(expired_nightly_packages), ',')} expired nightly packages. Keeping {format(len(nightly_package_data) - len(expired_nightly_packages), ',')} nightly packages created < {args.retention_days} days ago"
         )
-        targets = [
-            f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{args.region}/repositories/{args.repository}/packages/{package['Package']}/versions/{package['Version']}"
-            for package in expired_nightly_packages
+    logging.info("Downloading package data...")
+    package_data_results = await asyncio.gather(*package_data_promises)
+    logging.info("Package data downloaded")
+    logging.info("Unpacking package data")
+    package_data = []
+    for architecture, package_data_result in zip(architectures, package_data_results):
+        logging.info(f"Parsing {architecture} data")
+        parsed_package_data = [
+            parse_key_value_block(raw_package_data)
+            for raw_package_data in package_data_result.split("\n\n")
         ]
-        repository = await get_repository(args)
-        logging.info(f"repository:\n{str(repository)}")
-        batches = batched(targets, 10000)
-        for batch in batches:
-            await batch_delete_versions(batch, args.dry_run)
-    except Exception as e:
-        logging.error(f"An error occurred: {e}")
+        package_data.extend(parsed_package_data)
+    logging.info("Package data unpacked")
+    nightly_package_data = [
+        package for package in package_data if package["Gecko-Version"].is_nightly
+    ]
+    now = datetime.now()
+    expired_nightly_packages = [
+        package
+        for package in nightly_package_data
+        if now - package["Moz-Build-Date"] > timedelta(days=args.retention_days)
+    ]
+    logging.info(
+        f"Found {format(len(expired_nightly_packages), ',')} expired nightly packages. Keeping {format(len(nightly_package_data) - len(expired_nightly_packages), ',')} nightly packages created < {args.retention_days} days ago"
+    )
+    targets = [
+        f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{args.region}/repositories/{args.repository}/packages/{package['Package']}/versions/{package['Version']}"
+        for package in expired_nightly_packages
+    ]
+    repository = await get_repository(args)
+    logging.info(f"repository:\n{str(repository)}")
+    batches = batched(targets, 10000)
+    for batch in batches:
+        await batch_delete_versions(batch, args.dry_run)
 
 
 def main():
