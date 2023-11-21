@@ -6,7 +6,7 @@
 
 # mozilla-linux-pkg-manager
 
-`mozilla-releng/mozilla-linux-pkg-manager` is a Python tool for managing Mozilla product packages hosted in Linux software repositories.
+`mozilla-releng/mozilla-linux-pkg-manager` is a Python tool for managing Mozilla product packages hosted in Linux software repositories on the cloud.
 It can be used to clean-up obsolete Firefox Nightly versions.
 
 ## Requirements
@@ -31,6 +31,8 @@ poetry run mozilla-linux-pkg-manager clean-up [-h] --product PRODUCT --channel C
 - `--format`: The package format (i.e. deb). Currently, only `deb` is supported.
 - `--retention-days`: Sets the retention period in days for packages in the nightly channel. This parameter is only supported on the `nightly` channel.
 - `--dry-run`: Tells the script to do a no-op run and print out a summary of the operations that will be executed.
+- `--repository`: The repository to perform maintenance operations on.
+- `--region`: The cloud region the repository is hosted in.
 
 #### Example
 To clean up the nightly .deb packages that are older than 7 days:
@@ -88,12 +90,19 @@ To run the `mozilla-linux-pkg-manager` in a Docker container, you need to set th
 ```bash
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/google/application/credentials/[FILE_NAME].json
 docker run \
-   -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/[FILE_NAME].json \
-   -v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/keys/[FILE_NAME].json:ro \
-   $IMAGE_NAME clean-up --product firefox --channel nightly --format deb --retention-days 3
+-e GOOGLE_CLOUD_PROJECT=[PROJECT_NAME] \
+-e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/[FILE_NAME].json \
+-v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/keys/[FILE_NAME].json:ro \
+$IMAGE_NAME \
+--product firefox \
+--channel nightly \
+--format deb \
+--retention-days 3 \
+--repository mozilla \
+--region us
 ```
 
 In this command:
 - The `-e` flag sets the `GOOGLE_APPLICATION_CREDENTIALS` environment variable inside the container.
-- The `-v` flag mounts the credentials file from your host system to the container. 
+- The `-v` flag mounts the credentials file from your host system to the container.
 - The last line specifies the command and its arguments to be executed inside the container.
