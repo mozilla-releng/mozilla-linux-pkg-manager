@@ -5,7 +5,7 @@ task-priority: low
 taskgraph:
   cached-task-prefix: "mozilla.v2.mozilla-linux-pkg-manager"
   repositories:
-    mozilla-linux-pkg-manager:
+    mozilla_linux_pkg_manager:
       name: "mozilla-linux-pkg-manager"
 
 workers:
