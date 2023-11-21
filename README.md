@@ -124,6 +124,6 @@ $IMAGE_NAME \
 ```
 
 In this command:
-- The `-e` flag sets the `GOOGLE_APPLICATION_CREDENTIALS` environment variable inside the container.
+- The `-e` flag sets the `GOOGLE_APPLICATION_CREDENTIALS` and `GOOGLE_CLOUD_PROJECT` environment variables inside the container.
 - The `-v` flag mounts the credentials file from your host system to the container.
 - The last line specifies the command and its arguments to be executed inside the container.
