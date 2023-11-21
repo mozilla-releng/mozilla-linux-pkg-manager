@@ -6,7 +6,7 @@
 
 # mozilla-linux-pkg-manager
 
-`mozilla-releng/mozilla-linux-pkg-manager` is a Python tool for managing Mozilla product packages hosted in Linux software repositories on the cloud.
+`mozilla-releng/mozilla-linux-pkg-manager` is a Python tool for managing Mozilla product packages hosted in Linux software repositories on Google cloud.
 It can be used to clean-up obsolete Firefox Nightly versions.
 
 ## Requirements
@@ -20,10 +20,31 @@ It can be used to clean-up obsolete Firefox Nightly versions.
 2. **Clone the Repository**: Clone the `mozilla-linux-pkg-manager` repository using the command `git clone https://github.com/mozilla-releng/mozilla-linux-pkg-manager.git`.
 3. **Install Dependencies**: Navigate to the repository's root directory and run `poetry install` to install the required dependencies.
 
+### Setup Authentication
+The easiest way to authenticate is using the Google Cloud SDK:
+
+```bash
+gcloud auth application-default login
+```
+Note that this command generates credentials for client libraries. To authenticate the CLI itself, use:
+
+```bash
+gcloud auth login
+```
+
+### Setup the Development Environment
+To set up the environment for running `mozilla-linux-pkg-manager` set the following variables:
+
+```bash
+# defaults to /path/to/home/.config/gcloud/application_default_credentials.json
+export GOOGLE_APPLICATION_CREDENTIALS=path/to/home/.config/gcloud/[FILENAME].json
+export GOOGLE_CLOUD_PROJECT=[PROJECT_NAME]
+```
+
 ### Running `mozilla-linux-pkg-manager`
 To run `mozilla-linux-pkg-manager`, use Poetry with the following command:
 ```bash
-poetry run mozilla-linux-pkg-manager clean-up [-h] --product PRODUCT --channel CHANNEL --format FORMAT [--retention-days RETENTION_DAYS] [--dry-run]
+poetry run mozilla-linux-pkg-manager clean-up [-h] --product PRODUCT --channel CHANNEL --format FORMAT --repository REPOSITORY --region REGION [--retention-days RETENTION_DAYS] [--dry-run]
 ```
 #### Parameters
 - `--product`: Specifies the Mozilla product to manage (e.g. `nightly`, `release`, `beta`). Currently, only `firefox` is supported.
@@ -38,7 +59,7 @@ poetry run mozilla-linux-pkg-manager clean-up [-h] --product PRODUCT --channel C
 To clean up the nightly .deb packages that are older than 7 days:
 
 ```bash
-poetry run mozilla-linux-pkg-manager clean-up --product firefox --channel nightly --format deb --retention-days 7
+poetry run mozilla-linux-pkg-manager clean-up --product firefox --channel nightly --format deb --retention-days 7 --repository mozilla --region us
 ```
 
 ## Building and Installing a Python Wheel
@@ -60,7 +81,7 @@ After installation, the package can be used from anywhere on your system, provid
 To clean up nightly .deb packages that are older than 3 days:
 
 ```bash
-mozilla-linux-pkg-manager clean-up --product firefox --channel nightly --format deb --retention-days 3
+mozilla-linux-pkg-manager clean-up --product firefox --channel nightly --format deb --retention-days 3 --repository mozilla --region us
 ```
 
 ## Docker
