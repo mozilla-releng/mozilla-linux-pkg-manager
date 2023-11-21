@@ -76,7 +76,7 @@ Then, build the Docker image:
 docker build -t $IMAGE_NAME .
 ```
 
-This command builds a Docker image with the tag specified in `$IMAGE_NAME`, based on the instructions in your Dockerfile.
+This command builds a Docker image with the tag specified in `$IMAGE_NAME`, based on the instructions in the Dockerfile.
 
 ### Running the Docker Container
 
