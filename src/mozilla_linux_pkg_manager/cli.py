@@ -33,7 +33,7 @@ async def batch_delete_versions(versions, dry_run):
     return versions
 
 
-async def get_cloud_repo(args):
+async def get_repository(args):
     client = artifactregistry_v1.ArtifactRegistryAsyncClient()
     parent = f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{args.region}/repositories/{args.repository}"
     get_repo_request = artifactregistry_v1.GetRepositoryRequest(
@@ -65,7 +65,7 @@ async def fetch_url(url):
             return content
 
 
-def parse_key_value_block(block, args):
+def parse_key_value_block(block):
     package = {}
     for line in block.split("\n"):
         if line:
@@ -103,7 +103,7 @@ async def delete_nightly_versions(args):
             architectures, package_data_results
         ):
             parsed_package_data = [
-                parse_key_value_block(raw_package_data, args)
+                parse_key_value_block(raw_package_data)
                 for raw_package_data in package_data_result.split("\n\n")
             ]
             package_data.extend(parsed_package_data)
@@ -123,8 +123,8 @@ async def delete_nightly_versions(args):
             f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{args.region}/repositories/{args.repository}/packages/{package['Package']}/versions/{package['Version']}"
             for package in expired_nightly_packages
         ]
-        cloud_repo = await get_cloud_repo(args)
-        logging.info(f"cloud_repo:\n{str(cloud_repo)}")
+        repository = await get_repository(args)
+        logging.info(f"repository:\n{str(repository)}")
         batches = batched(targets, 10000)
         for batch in batches:
             await batch_delete_versions(batch, True)
