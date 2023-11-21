@@ -6,7 +6,7 @@
 
 # mozilla-linux-pkg-manager
 
-`mozilla-releng/mozilla-linux-pkg-manager` is a Python tool for managing Mozilla product packages hosted in Linux software repositories on Google cloud.
+`mozilla-releng/mozilla-linux-pkg-manager` is a Python tool for managing Mozilla product packages hosted in Linux software repositories hosted on Google Cloud Platform.
 It can be used to clean-up obsolete Firefox Nightly versions.
 
 ## Requirements
@@ -26,11 +26,7 @@ The easiest way to authenticate is using the Google Cloud SDK:
 ```bash
 gcloud auth application-default login
 ```
-Note that this command generates credentials for client libraries. To authenticate the CLI itself, use:
-
-```bash
-gcloud auth login
-```
+Note that this command generates credentials for the Google Cloud Platform client libraries.
 
 ### Setup the Development Environment
 To set up the environment for running `mozilla-linux-pkg-manager` set the following variables:
@@ -60,28 +56,6 @@ To clean up the nightly .deb packages that are older than 7 days:
 
 ```bash
 poetry run mozilla-linux-pkg-manager clean-up --product firefox --channel nightly --format deb --retention-days 7 --repository mozilla --region us
-```
-
-## Building and Installing a Python Wheel
-
-The `mozilla-linux-pkg-manager` package can be packaged into a wheel file for distribution and installation.
-
-### Building the Wheel
-1. **Navigate to the Project Directory**: Open your terminal and navigate to the directory where your project is located.
-2. **Build the Package**: Execute `poetry build` to create the wheel file. This will generate a `dist` folder in your project directory containing the `.whl` file, whose name may vary based on the version and build.
-
-### Installing the Wheel File
-1. **Navigate to the `dist` Directory**: Move to the `dist` directory where the `.whl` file is located.
-2. **Install the Wheel File**: Use `pip install [wheel-file-name]` to install the package. Replace `[wheel-file-name]` with the actual name of the wheel file generated during the build process.
-
-### Using the Installed Package
-After installation, the package can be used from anywhere on your system, provided you are running the Python interpreter where it was installed.
-
-#### Example
-To clean up nightly .deb packages that are older than 3 days:
-
-```bash
-mozilla-linux-pkg-manager clean-up --product firefox --channel nightly --format deb --retention-days 3 --repository mozilla --region us
 ```
 
 ## Docker
@@ -127,3 +101,25 @@ In this command:
 - The `-e` flag sets the `GOOGLE_APPLICATION_CREDENTIALS` and `GOOGLE_CLOUD_PROJECT` environment variables inside the container.
 - The `-v` flag mounts the credentials file from your host system to the container.
 - The last line specifies the command and its arguments to be executed inside the container.
+
+## Building and Installing a Python Wheel
+
+The `mozilla-linux-pkg-manager` package can be packaged into a wheel file for distribution and installation.
+
+### Building the Wheel
+1. **Navigate to the Project Directory**: Open your terminal and navigate to the directory where your project is located.
+2. **Build the Package**: Execute `poetry build` to create the wheel file. This will generate a `dist` folder in your project directory containing the `.whl` file, whose name may vary based on the version and build.
+
+### Installing the Wheel File
+1. **Navigate to the `dist` Directory**: Move to the `dist` directory where the `.whl` file is located.
+2. **Install the Wheel File**: Use `pip install [wheel-file-name]` to install the package. Replace `[wheel-file-name]` with the actual name of the wheel file generated during the build process.
+
+### Using the Installed Package
+After installation, the package can be used from anywhere on your system, provided you are running the Python interpreter where it was installed.
+
+#### Example
+To clean up nightly .deb packages that are older than 3 days:
+
+```bash
+mozilla-linux-pkg-manager clean-up --product firefox --channel nightly --format deb --retention-days 3 --repository mozilla --region us
+```
