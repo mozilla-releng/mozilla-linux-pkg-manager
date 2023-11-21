@@ -51,6 +51,7 @@ select = [
 ]
 ignore = [
     "E501",  # let black handle line-length
+    "UP007",
 ]
 target-version = "py311"
 
