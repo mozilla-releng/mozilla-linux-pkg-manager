@@ -83,12 +83,16 @@ This command builds a Docker image with the tag specified in `$IMAGE_NAME`, base
 To run the `mozilla-linux-pkg-manager` in a Docker container, you need to set the Google Application Credentials and mount them as a volume in the container. Replace `[FILE_NAME].json` with the name of your Google Application Credentials file and ensure the path to the credentials file is correctly set in the `GOOGLE_APPLICATION_CREDENTIALS` environment variable.
 
 ```bash
+# defaults to /path/to/home/.config/gcloud/application_default_credentials.json
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/google/application/credentials/[FILE_NAME].json
+export GOOGLE_CLOUD_PROJECT=[PROJECT_NAME]
+
 docker run \
--e GOOGLE_CLOUD_PROJECT=[PROJECT_NAME] \
--e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/[FILE_NAME].json \
--v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/keys/[FILE_NAME].json:ro \
+-e GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT \
+-e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/google/key.json \
+-v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/keys/google/key.json:ro \
 $IMAGE_NAME \
+clean-up \
 --product firefox \
 --channel nightly \
 --format deb \
