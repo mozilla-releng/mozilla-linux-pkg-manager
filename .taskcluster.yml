@@ -177,9 +177,9 @@ tasks:
                   payload:
                       $let:
                           normProject:
-                              $eval: 'project'
+                              $eval: 'join(split(project, "-"), "_")'
                           normProjectUpper:
-                              $eval: 'uppercase(project)'
+                              $eval: 'uppercase(join(split(project, "-"), "_"))'
                       in:
                           env:
                               # run-task uses these to check out the source; the inputs to
