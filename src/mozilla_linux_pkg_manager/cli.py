@@ -135,6 +135,8 @@ async def batch_delete_versions(versions, args):
             logging.info(
                 f"Deleting {format(len(batch), ',')} expired package versions for {package}."
             )
+            if len(batch) < 5:
+                logging.info(f"versions:\n{pformat(batch)}")
             request = artifactregistry_v1.BatchDeleteVersionsRequest(
                 parent=package,
                 names=batch,
@@ -248,11 +250,11 @@ async def delete_nightly_versions(args):
     logging.info(
         f"Found {format(len(expired_nightly_packages), ',')} expired nightly packages. Keeping {format(len(nightly_package_data) - len(expired_nightly_packages), ',')} nightly packages created < {args.retention_days} days ago"
     )
-    targets = defaultdict(list)
+    targets = defaultdict(set)
     for package in expired_nightly_packages:
         targets[
             f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{args.region}/repositories/{args.repository}/packages/{package['Package']}"
-        ].append(
+        ].add(
             f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{args.region}/repositories/{args.repository}/packages/{package['Package']}/versions/{package['Version']}"
         )
     if not expired_nightly_packages:
