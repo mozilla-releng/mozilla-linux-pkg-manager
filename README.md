@@ -58,11 +58,25 @@ poetry run mozilla-linux-pkg-manager clean-up --product firefox --channel nightl
 
 ## Docker
 
-The `mozilla-linux-pkg-manager` can also be run as a Docker container. This section guides you through building a Docker image and running the container.
+The `mozilla-linux-pkg-manager` can also be run as a Docker container.
 
-### Building the Docker Image
-
-First, export the desired image name as an environment variable:
+```bash
+export GOOGLE_CLOUD_PROJECT=[GOOGLE_CLOUD_PROJECT]
+export GOOGLE_APPLICATION_CREDENTIALS=[/path/to/google/application/credentials/file.json]
+docker run --rm \
+-e GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT \
+-e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/google/key.json \
+-v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/keys/google/key.json:ro \
+mozillareleases/mozilla-linux-pkg-manager:0.3.0 \
+clean-up \
+--product firefox \
+--channel nightly \
+--format deb \
+--retention-days 3 \
+--repository [REPOSITORY] \
+--region [REGION] \
+--dry-run
+```
 
 ```bash
 export IMAGE_NAME=mozilla-linux-pkg-manager
