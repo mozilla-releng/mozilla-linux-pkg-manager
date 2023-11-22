@@ -133,7 +133,7 @@ async def batch_delete_versions(versions, args):
         batches = batched(versions[package], 10000)
         for batch in batches:
             logging.info(
-                f"Deleting {format(len(versions), ',')} expired package versions for {package}."
+                f"Deleting {format(len(batch), ',')} expired package versions for {package}."
             )
             request = artifactregistry_v1.BatchDeleteVersionsRequest(
                 parent=package,
@@ -208,7 +208,7 @@ async def delete_nightly_versions(args):
     parsed_release_data = yaml.safe_load(raw_release_data)
     logging.info(f"parsed_release_data:\n{pformat(parsed_release_data)}")
     architectures = parsed_release_data["Architectures"].split()
-    logging.info(f"architectures:{pformat(architectures)}")
+    logging.info(f"architectures: {pformat(architectures)}")
     package_data_promises = []
     for architecture in architectures:
         pkg_url = f"{normalized_url}main/binary-{architecture}/Packages"
@@ -232,12 +232,14 @@ async def delete_nightly_versions(args):
         ]
         package_data.extend(parsed_package_data)
     logging.info("Package data unpacked")
+    logging.info("Loading nightly package data")
     nightly_package_data = [
         package
         for package in package_data
         if package and package["Gecko-Version"].is_nightly
     ]
     now = datetime.now()
+    logging.info("Getting expired packages...")
     expired_nightly_packages = [
         package
         for package in nightly_package_data
@@ -253,8 +255,16 @@ async def delete_nightly_versions(args):
         ].append(
             f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{args.region}/repositories/{args.repository}/packages/{package['Package']}/versions/{package['Version']}"
         )
-    repository = await get_repository(args)
-    logging.info(f"repository:\n{str(repository)}")
+    if not expired_nightly_packages:
+        logging.info("Nothing to do!")
+        exit(0)
+    logging.info("Pinging repository...")
+    repository = await retry_async(
+        get_repository,
+        args=[args],
+        attempts=3,
+    )
+    logging.info(f"Found repository: {repository.name}")
     await batch_delete_versions(targets, args)
 
 
@@ -324,12 +334,14 @@ def main():
             raise ValueError("firefox is the only supported product")
         if args.format != "deb":
             raise ValueError("deb is the only supported format")
+        if args.channel != "nightly":
+            raise ValueError("nightly is the only supported channel")
         if args.channel == "nightly":
             if args.retention_days is None:
                 raise ValueError(
                     "Retention days must be specified for the nightly channel"
                 )
             asyncio.run(delete_nightly_versions(args))
-            logging.info("Done cleaning up")
+            logging.info("Done cleaning up!")
         else:
             raise ValueError("Only the nightly channel is supported")
