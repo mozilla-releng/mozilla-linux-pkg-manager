@@ -3,6 +3,7 @@ import asyncio
 import logging
 import os
 import random
+from collections import defaultdict
 from collections.abc import Awaitable, Callable, Sequence
 from datetime import datetime, timedelta
 from itertools import islice
@@ -126,28 +127,21 @@ def define_sleep_time(
     return sleep_time
 
 
-async def batch_delete_versions(versions, dry_run):
+async def batch_delete_versions(versions, args):
     client = artifactregistry_v1.ArtifactRegistryAsyncClient()
-    request = artifactregistry_v1.BatchDeleteVersionsRequest(
-        names=versions,
-    )
-    display_versions = [
-        await retry_async(
-            client.get_version,
-            kwargs={"request": artifactregistry_v1.GetVersionRequest(name=version)},
-        )
-        for version in random.sample(versions, 3)
-    ]
-    if not dry_run:
-        logging.info(
-            f"Deleting {format(len(versions), ',')} expired package versions similar to:\n{str(display_versions)}"
-        )
-        operation = client.batch_delete_versions(request=request)
-        result = (await operation).result()
-        logging.info(f"result: {str(result)}")
-    logging.info(
-        f"batch_delete_versions is a no-op in dry-run mode!\nDeleting {format(len(versions), ',')} expired package versions similar to:\n{str(display_versions)}"
-    )
+    for package in versions:
+        batches = batched(versions[package], 10000)
+        for batch in batches:
+            logging.info(
+                f"Deleting {format(len(versions), ',')} expired package versions for {package}."
+            )
+            request = artifactregistry_v1.BatchDeleteVersionsRequest(
+                parent=package,
+                names=batch,
+                validate_only=args.dry_run,
+            )
+        operation = await client.batch_delete_versions(request=request)
+        await operation.result()
 
 
 async def get_repository(args):
@@ -239,7 +233,9 @@ async def delete_nightly_versions(args):
         package_data.extend(parsed_package_data)
     logging.info("Package data unpacked")
     nightly_package_data = [
-        package for package in package_data if package["Gecko-Version"].is_nightly
+        package
+        for package in package_data
+        if package and package["Gecko-Version"].is_nightly
     ]
     now = datetime.now()
     expired_nightly_packages = [
@@ -250,15 +246,16 @@ async def delete_nightly_versions(args):
     logging.info(
         f"Found {format(len(expired_nightly_packages), ',')} expired nightly packages. Keeping {format(len(nightly_package_data) - len(expired_nightly_packages), ',')} nightly packages created < {args.retention_days} days ago"
     )
-    targets = [
-        f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{args.region}/repositories/{args.repository}/packages/{package['Package']}/versions/{package['Version']}"
-        for package in expired_nightly_packages
-    ]
+    targets = defaultdict(list)
+    for package in expired_nightly_packages:
+        targets[
+            f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{args.region}/repositories/{args.repository}/packages/{package['Package']}"
+        ].append(
+            f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{args.region}/repositories/{args.repository}/packages/{package['Package']}/versions/{package['Version']}"
+        )
     repository = await get_repository(args)
     logging.info(f"repository:\n{str(repository)}")
-    batches = batched(targets, 10000)
-    for batch in batches:
-        await batch_delete_versions(batch, args.dry_run)
+    await batch_delete_versions(targets, args)
 
 
 def main():
