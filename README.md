@@ -31,7 +31,7 @@ To set up the environment for running `mozilla-linux-pkg-manager` set the follow
 
 ```bash
 # defaults to /path/to/home/.config/gcloud/application_default_credentials.json
-export GOOGLE_APPLICATION_CREDENTIALS=path/to/home/.config/gcloud/[FILENAME].json
+export GOOGLE_APPLICATION_CREDENTIALS=[/path/to/google/application/credentials/file.json]
 export GOOGLE_CLOUD_PROJECT=[PROJECT_NAME]
 ```
 
@@ -100,7 +100,7 @@ To run the `mozilla-linux-pkg-manager` in a Docker container, you need to set th
 
 ```bash
 # defaults to /path/to/home/.config/gcloud/application_default_credentials.json
-export GOOGLE_APPLICATION_CREDENTIALS=/path/to/google/application/credentials/[FILE_NAME].json
+export GOOGLE_APPLICATION_CREDENTIALS=[/path/to/google/application/credentials/file.json]
 export GOOGLE_CLOUD_PROJECT=[PROJECT_NAME]
 
 docker run \
