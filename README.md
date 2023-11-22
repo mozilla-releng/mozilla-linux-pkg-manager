@@ -58,7 +58,7 @@ poetry run mozilla-linux-pkg-manager clean-up --product firefox --channel nightl
 
 ## Docker
 
-The `mozilla-linux-pkg-manager` can also be run as a Docker container.
+The `mozilla-linux-pkg-manager` tool can also be run as a Docker container using the [mozillareleases/mozilla-linux-pkg-manager](https://hub.docker.com/r/mozillareleases/mozilla-linux-pkg-manager/tags) image.
 
 ```bash
 export GOOGLE_CLOUD_PROJECT=[GOOGLE_CLOUD_PROJECT]
