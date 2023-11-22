@@ -78,6 +78,10 @@ clean-up \
 --dry-run
 ```
 
+### Building the Docker Image
+
+First, export the desired image name as an environment variable:
+
 ```bash
 export IMAGE_NAME=mozilla-linux-pkg-manager
 ```
