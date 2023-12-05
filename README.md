@@ -89,7 +89,7 @@ export IMAGE_NAME=mozilla-linux-pkg-manager
 Then, build the Docker image:
 
 ```bash
-docker build -t $IMAGE_NAME .
+docker buildx build --platform linux/amd64 -t $IMAGE_NAME .
 ```
 
 This command builds a Docker image with the tag specified in `$IMAGE_NAME`, based on the instructions in the Dockerfile.
