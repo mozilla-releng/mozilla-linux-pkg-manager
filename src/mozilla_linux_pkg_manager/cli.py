@@ -229,17 +229,33 @@ async def delete_nightly_versions(args):
     for architecture, package_data_result in zip(architectures, package_data_results):
         logging.info(f"Parsing {architecture} data")
         parsed_package_data = [
-            parse_key_value_block(raw_package_data)
+            yaml.safe_load(raw_package_data)
             for raw_package_data in package_data_result.split("\n\n")
         ]
         package_data.extend(parsed_package_data)
     logging.info("Package data unpacked")
     logging.info("Loading nightly package data")
+    firefox_package_data = []
+    for package in package_data:
+        if package and "firefox" in package["Package"]:
+            version, postfix = package["Version"].split("~")
+            package["Gecko-Version"] = GeckoVersion.parse(version)
+            if package["Gecko-Version"].is_nightly:
+                package["Build-ID"] = postfix
+                package["Moz-Build-Date"] = datetime.strptime(
+                    package["Build-ID"], "%Y%m%d%H%M%S"
+                )
+            else:
+                package["Build-Number"] = postfix[len("build") :]
+            firefox_package_data.append(package)
     nightly_package_data = [
         package
-        for package in package_data
+        for package in firefox_package_data
         if package and package["Gecko-Version"].is_nightly
     ]
+    if not nightly_package_data:
+        logging.info("No nightly_package_data, nothing to do!")
+        exit(0)
     now = datetime.now()
     logging.info("Getting expired packages...")
     expired_nightly_packages = [
