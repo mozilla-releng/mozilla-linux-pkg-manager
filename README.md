@@ -67,7 +67,7 @@ docker run --rm \
 -e GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT \
 -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/google/key.json \
 -v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/keys/google/key.json:ro \
-mozillareleases/mozilla-linux-pkg-manager:0.3.0 \
+mozillareleases/mozilla-linux-pkg-manager:0.4.0 \
 clean-up \
 --product firefox \
 --channel nightly \
