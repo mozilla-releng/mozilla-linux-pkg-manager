@@ -41,7 +41,7 @@ To run `mozilla-linux-pkg-manager`, use Poetry with the following command:
 poetry run mozilla-linux-pkg-manager clean-up [-h] --product PRODUCT --channel CHANNEL --format FORMAT --repository REPOSITORY --region REGION [--retention-days RETENTION_DAYS] [--dry-run]
 ```
 #### Parameters
-- `--product`: Specifies the Mozilla product to manage (e.g. `nightly`, `release`, `beta`). Currently, only `firefox` is supported.
+- `--product`: Specifies the Mozilla product to manage (e.g. `firefox`, `devedition`, `vpn`). Currently, only `firefox` is supported.
 - `--channel`: Specifies the package channel (e.g. `nightly`, `release`, `beta`). Currently, only `nightly` is supported.
 - `--format`: The package format (i.e. deb). Currently, only `deb` is supported.
 - `--retention-days`: Sets the retention period in days for packages in the nightly channel. This parameter is only supported on the `nightly` channel.
