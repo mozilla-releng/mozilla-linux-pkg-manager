@@ -130,7 +130,7 @@ def define_sleep_time(
 async def batch_delete_versions(versions, args):
     client = artifactregistry_v1.ArtifactRegistryAsyncClient()
     for package in versions:
-        batches = batched(versions[package], 10000)
+        batches = batched(versions[package], 50)
         for batch in batches:
             logging.info(
                 f"Deleting {format(len(batch), ',')} expired package versions for {package}."
