@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mozilla-linux-pkg-manager"
-version = "0.6.0"
+version = "0.7.0"
 description = "`mozilla-releng/mozilla-linux-pkg-manager` is a Python tool for managing Mozilla `.deb` packages."
 authors = ["Mozilla Release Engineering <release@mozilla.com>"]
 license = "MPL-2.0"
