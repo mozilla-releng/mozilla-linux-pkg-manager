@@ -142,8 +142,8 @@ async def batch_delete_versions(versions, args):
                 names=batch,
                 validate_only=args.dry_run,
             )
-        operation = await client.batch_delete_versions(request=request)
-        await operation.result()
+            operation = await client.batch_delete_versions(request=request)
+            await operation.result()
 
 
 async def get_repository(args):
