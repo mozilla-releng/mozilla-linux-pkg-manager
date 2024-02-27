@@ -111,10 +111,11 @@ $IMAGE_NAME \
 clean-up \
 --product firefox \
 --channel nightly \
---format deb \
 --retention-days 3 \
 --repository mozilla \
---region us
+--region us \
+--dry-run \
+--package firefox-nightly
 ```
 
 In this command:

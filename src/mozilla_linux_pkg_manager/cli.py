@@ -5,14 +5,11 @@ import os
 import random
 from collections import defaultdict
 from collections.abc import Awaitable, Callable, Sequence
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from fnmatch import fnmatch
 from itertools import islice
 from pprint import pformat
-from typing import (
-    Any,
-    Optional,
-    Union,
-)
+from typing import Any, Optional, Union
 from urllib.parse import urljoin
 
 import aiohttp
@@ -156,6 +153,22 @@ async def get_repository(args):
     return repository
 
 
+async def get_versions(args, packages):
+    versions = [
+        f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{args.region}/repositories/{args.repository}/packages/{package['Package']}/versions/{package['Version']}"
+        for package in packages
+    ]
+    requests = [
+        artifactregistry_v1.GetVersionRequest(name=version) for version in versions
+    ]
+    client = artifactregistry_v1.ArtifactRegistryAsyncClient()
+    responses = [
+        await retry_async(client.get_version, args=[request], attempts=3)
+        for request in requests
+    ]
+    return responses
+
+
 def batched(iterable, n):
     "Batch data into tuples of length n. The last batch may be shorter."
     # batched('ABCDEFG', 3) --> ABC DEF G
@@ -197,7 +210,7 @@ def parse_key_value_block(block):
     return package
 
 
-async def delete_nightly_versions(args):
+async def fetch_package_data(args):
     url = f"https://{args.region}-apt.pkg.dev/projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/dists/{args.repository}"
     normalized_url = f"{url}/" if not url.endswith("/") else url
     release_url = urljoin(normalized_url, "Release")
@@ -234,9 +247,33 @@ async def delete_nightly_versions(args):
         ]
         package_data.extend(parsed_package_data)
     logging.info("Package data unpacked")
-    logging.info("Loading nightly package data")
+    logging.info(f"Loading {args.package} package data")
+    selected_package_data = [
+        package for package in package_data if fnmatch(package["Package"], args.package)
+    ]
+    return selected_package_data
+
+
+async def clean_up(args):
+    logging.info("Pinging repository...")
+    repository = await retry_async(
+        get_repository,
+        args=[args],
+        attempts=3,
+    )
+    logging.info(f"Found repository: {repository.name}")
+    packages = await fetch_package_data(args)
+    versions = await get_versions(args, packages)
+    now = datetime.now(timezone.utc)
+    logging.info("Getting expired packages...")
+    expired = [
+        version
+        for version in versions
+        if now - version.create_time > timedelta(days=args.retention_days)
+    ]
+    breakpoint()
     firefox_package_data = []
-    for package in package_data:
+    for package in packages:
         if package and "firefox" in package["Package"]:
             version, postfix = package["Version"].split("~")
             package["Gecko-Version"] = GeckoVersion.parse(version)
@@ -286,12 +323,22 @@ async def delete_nightly_versions(args):
     await batch_delete_versions(targets, args)
 
 
+async def version_info(args):
+    package_data = await fetch_package_data(args)
+    logging.info(f'Loaded {len(package_data)} packages matching "{args.package}"')
+    unique_versions = set(package["Version"] for package in package_data)
+    logging.info(
+        f'There\'s {len(unique_versions)} unique versions for packages matching "{args.package}"'
+    )
+    logging.info(f"unique_versions:\n{pformat(unique_versions)}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="mozilla-linux-pkg-manager")
     subparsers = parser.add_subparsers(
         dest="command",
         required=True,
-        help='Sub-commands (currently only "clean-up" is supported)',
+        help='Sub-commands (currently only "clean-up" and "version-info" are supported)',
     )
 
     # Subparser for the 'clean-up' command
@@ -299,21 +346,9 @@ def main():
         "clean-up", help="Clean up package versions."
     )
     clean_up_parser.add_argument(
-        "--product",
+        "--package",
         type=str,
-        help="Product in the packages (i.e. firefox)",
-        required=True,
-    )
-    clean_up_parser.add_argument(
-        "--channel",
-        type=str,
-        help="Channel of the packages (e.g. nightly, release, beta)",
-        required=True,
-    )
-    clean_up_parser.add_argument(
-        "--format",
-        type=str,
-        help="The package format (i.e. deb)",
+        help='The name of the packages to clean-up (e.x. "firefox-nightly-*")',
         required=True,
     )
     clean_up_parser.add_argument(
@@ -331,7 +366,8 @@ def main():
     clean_up_parser.add_argument(
         "--retention-days",
         type=int,
-        help="Retention period in days for packages in the nightly channel",
+        required=True,
+        help="Retention period in days for the selected packages",
     )
     clean_up_parser.add_argument(
         "--dry-run",
@@ -340,26 +376,37 @@ def main():
         default=False,
     )
 
+    version_info_parser = subparsers.add_parser(
+        "version-info", help="Display information about package versions."
+    )
+    version_info_parser.add_argument(
+        "--package",
+        type=str,
+        help='The name of the packages to clean-up (e.x. "firefox-nightly-*")',
+        required=True,
+    )
+    version_info_parser.add_argument(
+        "--repository",
+        type=str,
+        help="",
+        required=True,
+    )
+    version_info_parser.add_argument(
+        "--region",
+        type=str,
+        help="",
+        required=True,
+    )
+
     args = parser.parse_args()
-
-    if args.dry_run:
-        logging.info("The dry-run mode is enabled. Doing a no-op run!")
-
     logging.info(f"args:\n{pformat(vars(args))}")
 
     if args.command == "clean-up":
-        if args.product != "firefox":
-            raise ValueError("firefox is the only supported product")
-        if args.format != "deb":
-            raise ValueError("deb is the only supported format")
-        if args.channel != "nightly":
-            raise ValueError("nightly is the only supported channel")
-        if args.channel == "nightly":
-            if args.retention_days is None:
-                raise ValueError(
-                    "Retention days must be specified for the nightly channel"
-                )
-            asyncio.run(delete_nightly_versions(args))
-            logging.info("Done cleaning up!")
-        else:
-            raise ValueError("Only the nightly channel is supported")
+        if args.dry_run:
+            logging.info("The dry-run mode is enabled. Doing a no-op run!")
+        asyncio.run(clean_up(args))
+        logging.info("Done cleaning up!")
+
+    if args.command == "version-info":
+        asyncio.run(version_info(args))
+        logging.info("Done displaying version info!")
