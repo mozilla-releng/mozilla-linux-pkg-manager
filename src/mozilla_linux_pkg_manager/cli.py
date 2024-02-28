@@ -3,17 +3,17 @@ import asyncio
 import logging
 import os
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from fnmatch import fnmatch
 from itertools import islice
 from pprint import pformat
 
-from google.api_core import exceptions as api_exceptions
-from google.cloud import artifactregistry_v1
 import requests
 import requests.exceptions as requests_exceptions
+from google.api_core import exceptions as api_exceptions
 from google.api_core import retry_async
 from google.auth import exceptions as auth_exceptions
+from google.cloud import artifactregistry_v1
 
 logging.basicConfig(
     format="%(asctime)s - mozilla-linux-pkg-manager - %(levelname)s - %(message)s",
@@ -64,7 +64,9 @@ async def batch_delete_versions(targets, args):
                 names=batch,
                 validate_only=args.dry_run,
             )
-            operation = await client.batch_delete_versions(request=request, retry=ASYNC_RETRY)
+            operation = await client.batch_delete_versions(
+                request=request, retry=ASYNC_RETRY
+            )
             await operation.result()
 
 
@@ -74,7 +76,9 @@ async def get_repository(args):
     get_repository_request = artifactregistry_v1.GetRepositoryRequest(
         name=parent,
     )
-    repository = await client.get_repository(request=get_repository_request, retry=ASYNC_RETRY)
+    repository = await client.get_repository(
+        request=get_repository_request, retry=ASYNC_RETRY
+    )
     return repository
 
 
@@ -115,7 +119,7 @@ async def clean_up(args):
     repository = await get_repository(args)
     logging.info(f"Found repository: {repository.name}")
     packages = await list_packages(repository)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     targets = defaultdict(set)
     async for package in packages:
         name = os.path.basename(package.name)
