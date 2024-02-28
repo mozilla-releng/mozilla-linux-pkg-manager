@@ -152,7 +152,7 @@ def main():
     clean_up_parser.add_argument(
         "--package",
         type=str,
-        help='The name of the packages to clean-up (e.x. "firefox-nightly-*")',
+        help='The name of the packages to clean-up (ex. "firefox-nightly-*")',
         required=True,
     )
     clean_up_parser.add_argument(

@@ -41,9 +41,7 @@ To run `mozilla-linux-pkg-manager`, use Poetry with the following command:
 poetry run mozilla-linux-pkg-manager clean-up [-h] --product PRODUCT --channel CHANNEL --format FORMAT --repository REPOSITORY --region REGION [--retention-days RETENTION_DAYS] [--dry-run]
 ```
 #### Parameters
-- `--product`: Specifies the Mozilla product to manage (e.g. `firefox`, `devedition`, `vpn`). Currently, only `firefox` is supported.
-- `--channel`: Specifies the package channel (e.g. `nightly`, `release`, `beta`). Currently, only `nightly` is supported.
-- `--format`: The package format (i.e. deb). Currently, only `deb` is supported.
+- `--package`: The name of the packages to clean-up (ex. "firefox-nightly-*")
 - `--retention-days`: Sets the retention period in days for packages in the nightly channel. This parameter is only supported on the `nightly` channel.
 - `--dry-run`: Tells the script to do a no-op run and print out a summary of the operations that will be executed.
 - `--repository`: The repository to perform maintenance operations on.
@@ -53,7 +51,7 @@ poetry run mozilla-linux-pkg-manager clean-up [-h] --product PRODUCT --channel C
 To clean up the nightly .deb packages that are older than 7 days:
 
 ```bash
-poetry run mozilla-linux-pkg-manager clean-up --product firefox --channel nightly --format deb --retention-days 7 --repository mozilla --region us
+poetry run mozilla-linux-pkg-manager clean-up --package "firefox-nightly*" --retention-days 7 --repository mozilla --region us
 ```
 
 ## Docker
@@ -69,9 +67,7 @@ docker run --rm \
 -v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/keys/google/key.json:ro \
 mozillareleases/mozilla-linux-pkg-manager:0.7.0 \
 clean-up \
---product firefox \
---channel nightly \
---format deb \
+--package "firefox-nightly*" \
 --retention-days 3 \
 --repository [REPOSITORY] \
 --region [REGION] \
@@ -109,13 +105,11 @@ docker run \
 -v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/keys/google/key.json:ro \
 $IMAGE_NAME \
 clean-up \
---product firefox \
---channel nightly \
+--package "firefox-beta*" \
 --retention-days 3 \
 --repository mozilla \
 --region us \
---dry-run \
---package firefox-nightly
+--dry-run
 ```
 
 In this command:
@@ -142,5 +136,5 @@ After installation, the package can be used from anywhere on your system, provid
 To clean up nightly .deb packages that are older than 3 days:
 
 ```bash
-mozilla-linux-pkg-manager clean-up --product firefox --channel nightly --format deb --retention-days 3 --repository mozilla --region us
+mozilla-linux-pkg-manager clean-up --package "firefox-nightly*" --retention-days 3 --repository mozilla --region us
 ```
