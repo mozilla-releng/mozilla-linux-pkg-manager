@@ -142,7 +142,7 @@ def main():
     subparsers = parser.add_subparsers(
         dest="command",
         required=True,
-        help='Sub-commands (currently only "clean-up" and "version-info" are supported)',
+        help='Sub-commands (currently only "clean-up" is supported)',
     )
 
     # Subparser for the 'clean-up' command
