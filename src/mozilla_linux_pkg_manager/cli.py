@@ -219,7 +219,7 @@ async def fetch_package_data(args):
     url = f"https://{args.region}-apt.pkg.dev/projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/dists/{args.repository}"
     normalized_url = f"{url}/" if not url.endswith("/") else url
     release_url = urljoin(normalized_url, "Release")
-    logging.info(f"Fetching raw_release_data at {url}")
+    logging.info(f"Fetching raw_release_data at {release_url}")
     raw_release_data = await retry_async(
         fetch_url,
         args=[release_url],
@@ -259,6 +259,26 @@ async def fetch_package_data(args):
     return selected_package_data
 
 
+async def list_packages(repository):
+    client = artifactregistry_v1.ArtifactRegistryAsyncClient()
+    request = artifactregistry_v1.ListPackagesRequest(
+        parent=repository.name,
+        page_size=1000,
+    )
+    packages = await client.list_packages(request=request)
+    return packages
+
+
+async def list_versions(package):
+    client = artifactregistry_v1.ArtifactRegistryAsyncClient()
+    request = artifactregistry_v1.ListVersionsRequest(
+        parent=package.name,
+        page_size=1000,
+    )
+    versions = await client.list_versions(request=request)
+    return versions
+
+
 async def clean_up(args):
     logging.info("Pinging repository...")
     repository = await retry_async(
@@ -267,29 +287,25 @@ async def clean_up(args):
         attempts=3,
     )
     logging.info(f"Found repository: {repository.name}")
-
-    packages = await fetch_package_data(args)
-    versions = await get_versions(args, packages)
-
-    logging.info("Getting expired packages...")
+    packages = await list_packages(repository)
     now = datetime.now(timezone.utc)
-    expired = [
-        version
-        for version in versions
-        if now - version.create_time > timedelta(days=args.retention_days)
-    ]
+    targets = defaultdict(set)
+    async for package in packages:
+        name = os.path.basename(package.name)
+        if fnmatch(name, args.package):
+            versions = await list_versions(package)
+            async for version in versions:
+                if now - version.create_time > timedelta(days=args.retention_days):
+                    targets[package.name].add(version.name)
+    logging.info(f"Found {len(targets)} packages matching {args.package}")
+    for target in targets:
+        logging.info(
+            f"Found {len(targets[target])} expired versions of {os.path.basename(target)}"
+        )
 
-    if not expired:
+    if not target:
         logging.info("No expired packages, nothing to do!")
         exit(0)
-
-    logging.info(
-        f"Found {format(len(expired), ',')} expired packages. Keeping {format(len(versions) - len(expired), ',')} packages created < {args.retention_days} day{'' if args.retention_days == 1 else 's'} ago"
-    )
-
-    targets = defaultdict(set)
-    for version in expired:
-        targets[version.name[: version.name.rfind("/versions/")]].add(version.name)
 
     await batch_delete_versions(targets, args)
 
@@ -307,7 +323,9 @@ async def version_info(args):
             for package in packages
         ]
     )
-    logging.info(f"There are {len(versions)} \"Package\" - \"Version\" combinations across packages matching \"{args.package}\"")
+    logging.info(
+        f'There are {len(versions)} "Package" - "Version" combinations across packages matching "{args.package}"'
+    )
 
 
 def main():
