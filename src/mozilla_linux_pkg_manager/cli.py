@@ -295,13 +295,20 @@ async def clean_up(args):
 
 
 async def version_info(args):
-    package_data = await fetch_package_data(args)
-    logging.info(f'Loaded {len(package_data)} packages matching "{args.package}"')
-    unique_versions = set(package["Version"] for package in package_data)
+    packages = await fetch_package_data(args)
+    logging.info(f'Loaded {len(packages)} packages matching "{args.package}"')
+    unique_versions = set(package["Version"] for package in packages)
     logging.info(
-        f'There\'s {len(unique_versions)} unique versions for packages matching "{args.package}"'
+        f'There\'s {len(unique_versions)} unique versions across all packages matching "{args.package}"'
     )
     logging.info(f"unique_versions:\n{pformat(unique_versions)}")
+    versions = set(
+        [
+            f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{args.region}/repositories/{args.repository}/packages/{package['Package']}/versions/{package['Version']}"
+            for package in packages
+        ]
+    )
+    logging.info(f"versions:\n{len(versions)}")
 
 
 def main():
