@@ -299,16 +299,15 @@ async def version_info(args):
     logging.info(f'Loaded {len(packages)} packages matching "{args.package}"')
     unique_versions = set(package["Version"] for package in packages)
     logging.info(
-        f'There\'s {len(unique_versions)} unique versions across all packages matching "{args.package}"'
+        f'There\'s {len(unique_versions)} unique versions across packages matching "{args.package}"'
     )
-    logging.info(f"unique_versions:\n{pformat(unique_versions)}")
     versions = set(
         [
             f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{args.region}/repositories/{args.repository}/packages/{package['Package']}/versions/{package['Version']}"
             for package in packages
         ]
     )
-    logging.info(f"versions:\n{len(versions)}")
+    logging.info(f"There are {len(versions)} \"Package\" - \"Version\" combinations across packages matching \"{args.package}\"")
 
 
 def main():
