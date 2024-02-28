@@ -2,126 +2,53 @@ import argparse
 import asyncio
 import logging
 import os
-import random
 from collections import defaultdict
-from collections.abc import Awaitable, Callable, Sequence
 from datetime import datetime, timedelta, timezone
 from fnmatch import fnmatch
 from itertools import islice
 from pprint import pformat
-from typing import Any, Optional, Union
-from urllib.parse import urljoin
 
-import aiohttp
-import yaml
+from google.api_core import exceptions as api_exceptions
 from google.cloud import artifactregistry_v1
-from mozilla_version.gecko import GeckoVersion
+import requests
+import requests.exceptions as requests_exceptions
+from google.api_core import retry_async
+from google.auth import exceptions as auth_exceptions
 
 logging.basicConfig(
     format="%(asctime)s - mozilla-linux-pkg-manager - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
 
+RETRYABLE_TYPES = (
+    api_exceptions.TooManyRequests,  # 429
+    api_exceptions.InternalServerError,  # 500
+    api_exceptions.BadGateway,  # 502
+    api_exceptions.ServiceUnavailable,  # 503
+    api_exceptions.GatewayTimeout,  # 504
+    ConnectionError,
+    requests.ConnectionError,
+    requests_exceptions.ChunkedEncodingError,
+    requests_exceptions.Timeout,
+)
 
-def calculate_sleep_time(
-    attempt, delay_factor=5.0, randomization_factor=0.5, max_delay=120
-):
-    """Calculate the sleep time between retries, in seconds.
-
-    Based off of `taskcluster.utils.calculateSleepTime`, but with kwargs instead
-    of constant `delay_factor`/`randomization_factor`/`max_delay`.  The taskcluster
-    function generally slept for less than a second, which didn't always get
-    past server issues.
-    Args:
-        attempt (int): the retry attempt number
-        delay_factor (float, optional): a multiplier for the delay time.  Defaults to 5.
-        randomization_factor (float, optional): a randomization multiplier for the
-            delay time.  Defaults to .5.
-        max_delay (float, optional): the max delay to sleep.  Defaults to 120 (seconds).
-    Returns:
-        float: the time to sleep, in seconds.
-    """
-    if attempt <= 0:
-        return 0
-
-    # We subtract one to get exponents: 1, 2, 3, 4, 5, ..
-    delay = float(2 ** (attempt - 1)) * float(delay_factor)
-    # Apply randomization factor.  Only increase the delay here.
-    delay = delay * (randomization_factor * random.random() + 1)
-    # Always limit with a maximum delay
-    return min(delay, max_delay)
+# Some retriable errors don't have their own custom exception in api_core.
+ADDITIONAL_RETRYABLE_STATUS_CODES = (408,)
 
 
-async def retry_async(
-    func: Callable[..., Awaitable[Any]],
-    attempts: int = 5,
-    sleeptime_callback: Callable[..., Any] = calculate_sleep_time,
-    retry_exceptions: Union[
-        type[BaseException], tuple[type[BaseException], ...]
-    ] = Exception,
-    args: Sequence[Any] = (),
-    kwargs: Optional[dict[str, Any]] = None,
-    sleeptime_kwargs: Optional[dict[str, Any]] = None,
-) -> Any:
-    """Retry ``func``, where ``func`` is an awaitable.
-
-    Args:
-        func (function): an awaitable function.
-        attempts (int, optional): the number of attempts to make.  Default is 5.
-        sleeptime_callback (function, optional): the function to use to determine
-            how long to sleep after each attempt.  Defaults to ``calculateSleepTime``.
-        retry_exceptions (list or exception, optional): the exception(s) to retry on.
-            Defaults to ``Exception``.
-        args (list, optional): the args to pass to ``func``.  Defaults to ()
-        kwargs (dict, optional): the kwargs to pass to ``func``.  Defaults to
-            {}.
-        sleeptime_kwargs (dict, optional): the kwargs to pass to ``sleeptime_callback``.
-            If None, use {}.  Defaults to None.
-    Returns:
-        object: the value from a successful ``function`` call
-    Raises:
-        Exception: the exception from a failed ``function`` call, either outside
-            of the retry_exceptions, or one of those if we pass the max
-            ``attempts``.
-    """
-    kwargs = kwargs or {}
-    attempt = 1
-    while True:
-        try:
-            return await func(*args, **kwargs)
-        except retry_exceptions:
-            attempt += 1
-            check_number_of_attempts(attempt, attempts, func, "retry_async")
-            await asyncio.sleep(
-                define_sleep_time(
-                    sleeptime_kwargs, sleeptime_callback, attempt, func, "retry_async"
-                )
-            )
+def should_retry(exc):
+    """Predicate for determining when to retry."""
+    if isinstance(exc, RETRYABLE_TYPES):
+        return True
+    elif isinstance(exc, api_exceptions.GoogleAPICallError):
+        return exc.code in ADDITIONAL_RETRYABLE_STATUS_CODES
+    elif isinstance(exc, auth_exceptions.TransportError):
+        return should_retry(exc.args[0])
+    else:
+        return False
 
 
-def check_number_of_attempts(
-    attempt: int, attempts: int, func: Callable[..., Any], retry_function_name: str
-) -> None:
-    if attempt > attempts:
-        logging.warning(f"{retry_function_name}: {func.__name__}: too many retries!")
-        raise
-
-
-def define_sleep_time(
-    sleeptime_kwargs: Optional[dict[str, Any]],
-    sleeptime_callback: Callable[..., int],
-    attempt: int,
-    func: Callable[..., Any],
-    retry_function_name: str,
-) -> float:
-    sleeptime_kwargs = sleeptime_kwargs or {}
-    sleep_time = sleeptime_callback(attempt, **sleeptime_kwargs)
-    logging.debug(
-        "{}: {}: sleeping {} seconds before retry".format(
-            retry_function_name, func.__name__, sleep_time
-        )
-    )
-    return sleep_time
+ASYNC_RETRY = retry_async.AsyncRetry(predicate=should_retry)
 
 
 async def batch_delete_versions(targets, args):
@@ -130,16 +57,14 @@ async def batch_delete_versions(targets, args):
         batches = batched(targets[package], 50)
         for batch in batches:
             logging.info(
-                f"Deleting {format(len(batch), ',')} expired package versions for {package}."
+                f"Deleting {format(len(batch), ',')} expired package versions for {package}"
             )
-            if len(batch) < 5:
-                logging.info(f"versions:\n{pformat(batch)}")
             request = artifactregistry_v1.BatchDeleteVersionsRequest(
                 parent=package,
                 names=batch,
                 validate_only=args.dry_run,
             )
-            operation = await client.batch_delete_versions(request=request)
+            operation = await client.batch_delete_versions(request=request, retry=ASYNC_RETRY)
             await operation.result()
 
 
@@ -149,29 +74,8 @@ async def get_repository(args):
     get_repository_request = artifactregistry_v1.GetRepositoryRequest(
         name=parent,
     )
-    repository = await client.get_repository(request=get_repository_request)
+    repository = await client.get_repository(request=get_repository_request, retry=ASYNC_RETRY)
     return repository
-
-
-async def get_versions(args, packages):
-    versions = set(
-        [
-            f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{args.region}/repositories/{args.repository}/packages/{package['Package']}/versions/{package['Version']}"
-            for package in packages
-        ]
-    )
-    logging.info(f"get_versions - versions: {len(versions)}")
-    requests = [
-        artifactregistry_v1.GetVersionRequest(name=version) for version in versions
-    ]
-    client = artifactregistry_v1.ArtifactRegistryAsyncClient()
-
-    responses = []
-    for request in requests:
-        responses.append(
-            await retry_async(client.get_version, args=[request], attempts=3)
-        )
-    return responses
 
 
 def batched(iterable, n):
@@ -186,86 +90,13 @@ def batched(iterable, n):
         batch = tuple(islice(it, n))
 
 
-async def fetch_url(url):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            if response.status != 200:
-                raise Exception(f"Failed to fetch data: HTTP Status {response.status}")
-
-            content = await response.text()
-            return content
-
-
-def parse_key_value_block(block):
-    package = {}
-    for line in block.split("\n"):
-        if line:
-            key, value = line.split(": ", 1)
-            package[key.strip()] = value.strip()
-            if key == "Version":
-                version, postfix = value.split("~")
-                package["Gecko-Version"] = GeckoVersion.parse(version)
-                if package["Gecko-Version"].is_nightly:
-                    package["Build-ID"] = postfix
-                    package["Moz-Build-Date"] = datetime.strptime(
-                        package["Build-ID"], "%Y%m%d%H%M%S"
-                    )
-                else:
-                    package["Build-Number"] = postfix[len("build") :]
-    return package
-
-
-async def fetch_package_data(args):
-    url = f"https://{args.region}-apt.pkg.dev/projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/dists/{args.repository}"
-    normalized_url = f"{url}/" if not url.endswith("/") else url
-    release_url = urljoin(normalized_url, "Release")
-    logging.info(f"Fetching raw_release_data at {release_url}")
-    raw_release_data = await retry_async(
-        fetch_url,
-        args=[release_url],
-        attempts=3,
-    )
-    parsed_release_data = yaml.safe_load(raw_release_data)
-    logging.info(f"parsed_release_data:\n{pformat(parsed_release_data)}")
-    architectures = parsed_release_data["Architectures"].split()
-    logging.info(f"architectures: {pformat(architectures)}")
-    package_data_promises = []
-    for architecture in architectures:
-        pkg_url = f"{normalized_url}main/binary-{architecture}/Packages"
-        package_data_promises.append(
-            retry_async(
-                fetch_url,
-                args=[pkg_url],
-                attempts=3,
-            )
-        )
-    logging.info("Downloading package data...")
-    package_data_results = await asyncio.gather(*package_data_promises)
-    logging.info("Package data downloaded")
-    logging.info("Unpacking package data")
-    package_data = []
-    for architecture, package_data_result in zip(architectures, package_data_results):
-        logging.info(f"Parsing {architecture} data")
-        parsed_package_data = [
-            yaml.safe_load(raw_package_data)
-            for raw_package_data in package_data_result.split("\n\n")
-        ]
-        package_data.extend(parsed_package_data)
-    logging.info("Package data unpacked")
-    logging.info(f"Loading {args.package} package data")
-    selected_package_data = [
-        package for package in package_data if fnmatch(package["Package"], args.package)
-    ]
-    return selected_package_data
-
-
 async def list_packages(repository):
     client = artifactregistry_v1.ArtifactRegistryAsyncClient()
     request = artifactregistry_v1.ListPackagesRequest(
         parent=repository.name,
         page_size=1000,
     )
-    packages = await client.list_packages(request=request)
+    packages = await client.list_packages(request=request, retry=ASYNC_RETRY)
     return packages
 
 
@@ -275,17 +106,13 @@ async def list_versions(package):
         parent=package.name,
         page_size=1000,
     )
-    versions = await client.list_versions(request=request)
+    versions = await client.list_versions(request=request, retry=ASYNC_RETRY)
     return versions
 
 
 async def clean_up(args):
     logging.info("Pinging repository...")
-    repository = await retry_async(
-        get_repository,
-        args=[args],
-        attempts=3,
-    )
+    repository = await get_repository(args)
     logging.info(f"Found repository: {repository.name}")
     packages = await list_packages(repository)
     now = datetime.now(timezone.utc)
@@ -308,24 +135,6 @@ async def clean_up(args):
         exit(0)
 
     await batch_delete_versions(targets, args)
-
-
-async def version_info(args):
-    packages = await fetch_package_data(args)
-    logging.info(f'Loaded {len(packages)} packages matching "{args.package}"')
-    unique_versions = set(package["Version"] for package in packages)
-    logging.info(
-        f'There\'s {len(unique_versions)} unique versions across packages matching "{args.package}"'
-    )
-    versions = set(
-        [
-            f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{args.region}/repositories/{args.repository}/packages/{package['Package']}/versions/{package['Version']}"
-            for package in packages
-        ]
-    )
-    logging.info(
-        f'There are {len(versions)} "Package" - "Version" combinations across packages matching "{args.package}"'
-    )
 
 
 def main():
@@ -371,28 +180,6 @@ def main():
         default=False,
     )
 
-    version_info_parser = subparsers.add_parser(
-        "version-info", help="Display information about package versions."
-    )
-    version_info_parser.add_argument(
-        "--package",
-        type=str,
-        help='The name of the packages to clean-up (e.x. "firefox-nightly-*")',
-        required=True,
-    )
-    version_info_parser.add_argument(
-        "--repository",
-        type=str,
-        help="",
-        required=True,
-    )
-    version_info_parser.add_argument(
-        "--region",
-        type=str,
-        help="",
-        required=True,
-    )
-
     args = parser.parse_args()
     logging.info(f"args:\n{pformat(vars(args))}")
 
@@ -401,7 +188,3 @@ def main():
             logging.info("The dry-run mode is enabled. Doing a no-op run!")
         asyncio.run(clean_up(args))
         logging.info("Done cleaning up!")
-
-    if args.command == "version-info":
-        asyncio.run(version_info(args))
-        logging.info("Done displaying version info!")
