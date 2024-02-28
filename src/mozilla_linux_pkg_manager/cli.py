@@ -124,10 +124,10 @@ def define_sleep_time(
     return sleep_time
 
 
-async def batch_delete_versions(versions, args):
+async def batch_delete_versions(targets, args):
     client = artifactregistry_v1.ArtifactRegistryAsyncClient()
-    for package in versions:
-        batches = batched(versions[package], 50)
+    for package in targets:
+        batches = batched(targets[package], 50)
         for batch in batches:
             logging.info(
                 f"Deleting {format(len(batch), ',')} expired package versions for {package}."
@@ -154,18 +154,23 @@ async def get_repository(args):
 
 
 async def get_versions(args, packages):
-    versions = [
-        f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{args.region}/repositories/{args.repository}/packages/{package['Package']}/versions/{package['Version']}"
-        for package in packages
-    ]
+    versions = set(
+        [
+            f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{args.region}/repositories/{args.repository}/packages/{package['Package']}/versions/{package['Version']}"
+            for package in packages
+        ]
+    )
+    logging.info(f"get_versions - versions: {len(versions)}")
     requests = [
         artifactregistry_v1.GetVersionRequest(name=version) for version in versions
     ]
     client = artifactregistry_v1.ArtifactRegistryAsyncClient()
-    responses = [
-        await retry_async(client.get_version, args=[request], attempts=3)
-        for request in requests
-    ]
+
+    responses = []
+    for request in requests:
+        responses.append(
+            await retry_async(client.get_version, args=[request], attempts=3)
+        )
     return responses
 
 
@@ -262,64 +267,30 @@ async def clean_up(args):
         attempts=3,
     )
     logging.info(f"Found repository: {repository.name}")
+
     packages = await fetch_package_data(args)
     versions = await get_versions(args, packages)
-    now = datetime.now(timezone.utc)
+
     logging.info("Getting expired packages...")
+    now = datetime.now(timezone.utc)
     expired = [
         version
         for version in versions
         if now - version.create_time > timedelta(days=args.retention_days)
     ]
-    breakpoint()
-    firefox_package_data = []
-    for package in packages:
-        if package and "firefox" in package["Package"]:
-            version, postfix = package["Version"].split("~")
-            package["Gecko-Version"] = GeckoVersion.parse(version)
-            if package["Gecko-Version"].is_nightly:
-                package["Build-ID"] = postfix
-                package["Moz-Build-Date"] = datetime.strptime(
-                    package["Build-ID"], "%Y%m%d%H%M%S"
-                )
-            else:
-                package["Build-Number"] = postfix[len("build") :]
-            firefox_package_data.append(package)
-    nightly_package_data = [
-        package
-        for package in firefox_package_data
-        if package and package["Gecko-Version"].is_nightly
-    ]
-    if not nightly_package_data:
-        logging.info("No nightly_package_data, nothing to do!")
+
+    if not expired:
+        logging.info("No expired packages, nothing to do!")
         exit(0)
-    now = datetime.now()
-    logging.info("Getting expired packages...")
-    expired_nightly_packages = [
-        package
-        for package in nightly_package_data
-        if now - package["Moz-Build-Date"] > timedelta(days=args.retention_days)
-    ]
+
     logging.info(
-        f"Found {format(len(expired_nightly_packages), ',')} expired nightly packages. Keeping {format(len(nightly_package_data) - len(expired_nightly_packages), ',')} nightly packages created < {args.retention_days} days ago"
+        f"Found {format(len(expired), ',')} expired packages. Keeping {format(len(versions) - len(expired), ',')} packages created < {args.retention_days} day{'' if args.retention_days == 1 else 's'} ago"
     )
+
     targets = defaultdict(set)
-    for package in expired_nightly_packages:
-        targets[
-            f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{args.region}/repositories/{args.repository}/packages/{package['Package']}"
-        ].add(
-            f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{args.region}/repositories/{args.repository}/packages/{package['Package']}/versions/{package['Version']}"
-        )
-    if not expired_nightly_packages:
-        logging.info("Nothing to do!")
-        exit(0)
-    logging.info("Pinging repository...")
-    repository = await retry_async(
-        get_repository,
-        args=[args],
-        attempts=3,
-    )
-    logging.info(f"Found repository: {repository.name}")
+    for version in expired:
+        targets[version.name[: version.name.rfind("/versions/")]].add(version.name)
+
     await batch_delete_versions(targets, args)
 
 
