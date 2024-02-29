@@ -54,11 +54,12 @@ ASYNC_RETRY = retry_async.AsyncRetry(predicate=should_retry)
 
 async def batch_delete_versions(targets, args):
     client = artifactregistry_v1.ArtifactRegistryAsyncClient()
+    start = time.time()
     for package in targets:
         batches = batched(targets[package], 50)
         for batch in batches:
             logging.info(
-                f"Deleting {format(len(batch), ',')} expired package versions of {os.path.basename(package)}"
+                f"Deleting {format(len(batch), ',')} expired package versions of {os.path.basename(package)}..."
             )
             request = artifactregistry_v1.BatchDeleteVersionsRequest(
                 parent=package,
@@ -69,6 +70,11 @@ async def batch_delete_versions(targets, args):
                 request=request, retry=ASYNC_RETRY
             )
             await operation.result()
+    end = time.time()
+    elapsed = int(end - start)
+    logging.info(
+        f"Done. Ran delete version requests for {elapsed} seconds (that's about ~{elapsed // 60} minutes.)"
+    )
 
 
 async def get_repository(args):
@@ -118,7 +124,9 @@ async def list_versions(package):
 async def clean_up(args):
     logging.info("Pinging repository...")
     repository = await get_repository(args)
-    logging.info(f"Found repository: {repository.name}")
+    logging.info(
+        f"Found repository:\nrepository = {json.dumps(artifactregistry_v1.Repository.to_dict(repository), indent=4)}"
+    )
     packages = await list_packages(repository)
     now = datetime.now(UTC)
     targets = defaultdict(set)
@@ -142,7 +150,7 @@ async def clean_up(args):
     end = time.time()
     elapsed = int(end - start)
     logging.info(
-        f"Done. Looked for {elapsed} seconds (that's about ~{elapsed // 60} minutes)"
+        f"Done. Looked for {elapsed} seconds (that's about ~{elapsed // 60} minutes.)"
     )
 
     if not targets:
