@@ -155,4 +155,3 @@ The `mozilla-linux-pkg-manager` package can be packaged into a wheel file for di
 
 ### Using the Installed Package
 After installation, the package can be used from anywhere on your system, provided you are running the Python interpreter where it was installed.
-

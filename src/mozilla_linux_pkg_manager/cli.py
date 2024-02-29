@@ -1,8 +1,8 @@
 import argparse
 import asyncio
+import json
 import logging
 import os
-import json
 import re
 import time
 from collections import defaultdict
@@ -154,7 +154,9 @@ async def clean_up(args):
     logging.info(
         f"Out of those versions, there are {len(unique_expired_versions)} unique versions across all packages."
     )
-    logging.info(f"Found unique expired versions:\nunique_expired_versions = {json.dumps(list(unique_expired_versions), indent=4)}")
+    logging.info(
+        f"Found unique expired versions:\nunique_expired_versions = {json.dumps(list(unique_expired_versions), indent=4)}"
+    )
 
     if args.skip_delete:
         logging.info(
