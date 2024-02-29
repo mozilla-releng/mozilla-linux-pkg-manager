@@ -58,7 +58,7 @@ async def batch_delete_versions(targets, args):
         batches = batched(targets[package], 50)
         for batch in batches:
             logging.info(
-                f"Deleting {format(len(batch), ',')} expired package versions of {package}"
+                f"Deleting {format(len(batch), ',')} expired package versions of {os.path.basename(package)}"
             )
             request = artifactregistry_v1.BatchDeleteVersionsRequest(
                 parent=package,
@@ -124,6 +124,7 @@ async def clean_up(args):
     targets = defaultdict(set)
     pattern = re.compile(args.package)
     unique_expired_versions = set()
+    all_versions = set()
 
     start = time.time()
 
@@ -133,6 +134,7 @@ async def clean_up(args):
             logging.info(f"Looking for expired package versions of {name}...")
             versions = await list_versions(package)
             async for version in versions:
+                all_versions.add(version.name)
                 if now - version.create_time > timedelta(days=args.retention_days):
                     targets[package.name].add(version.name)
                     unique_expired_versions.add(os.path.basename(version.name))
@@ -148,14 +150,18 @@ async def clean_up(args):
         exit(0)
 
     logging.info(f"Found {len(targets)} packages matching {args.package}")
-    logging.info(
-        f"There's a total of {sum(len(target) for target in targets.values())} expired versions to clean-up!"
-    )
-    logging.info(
-        f"Out of those versions, there are {len(unique_expired_versions)} unique versions across all packages."
-    )
+    total_expired_versions = sum(len(target) for target in targets.values())
     logging.info(
         f"Found unique expired versions:\nunique_expired_versions = {json.dumps(list(unique_expired_versions), indent=4)}"
+    )
+    logging.info(
+        f"There's a total of {total_expired_versions} expired versions to clean-up!"
+    )
+    logging.info(
+        f"Out of those expired versions, there are {len(unique_expired_versions)} unique versions across all packages."
+    )
+    logging.info(
+        f"There's a total of {len(all_versions)} versions. After clean-up, there will be {len(all_versions) - total_expired_versions} versions left."
     )
 
     if args.skip_delete:
