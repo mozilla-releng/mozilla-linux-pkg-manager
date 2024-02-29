@@ -184,12 +184,117 @@ async def clean_up(args):
     await batch_delete_versions(targets, args)
 
 
+def load_protocol_buffers(path, data_type):
+    binary_strings = []
+    with open(path, "rb") as f:
+        while True:
+            # Read the length of the next item (4 bytes)
+            length_bytes = f.read(4)
+
+            # If we've reached the end of the file, break the loop
+            if not length_bytes:
+                break
+
+            # Convert the length to an integer
+            length = int.from_bytes(length_bytes, byteorder="big")
+
+            # Read the next 'length' bytes to get the binary string
+            binary_string = f.read(length)
+
+            # Add the binary string to our list
+            binary_strings.append(binary_string)
+
+    if len(binary_strings) == 1:
+        binary_string = binary_strings[0]
+        deserialized = data_type.deserialize(binary_string)
+        return deserialized
+
+    deserialized = []
+    for binary_string in binary_strings:
+        d = data_type.deserialize(binary_string)
+        deserialized.append(d)
+    return deserialized
+
+
+async def dump_data(args):
+    if args.format not in ("bin", "json"):
+        raise NotImplementedError(f"The {args.format} format is not implemented!")
+
+    start = time.time()
+
+    logging.info("Getting repository...")
+    repository = await get_repository(args)
+    logging.info(
+        f"Found repository:\nrepository = {json.dumps(artifactregistry_v1.Repository.to_dict(repository), indent=4)}"
+    )
+
+    if not os.path.isdir(args.out_dir):
+        os.mkdir(args.out_dir)
+
+    with open(
+        os.path.join(
+            args.out_dir, f"{repository.__class__.__name__.lower()}.{args.format}"
+        ),
+        f"w{'b' if args.format == 'bin' else ''}",
+    ) as f:
+        if args.format == "json":
+            f.write(artifactregistry_v1.Repository.to_json(repository))
+        if args.format == "bin":
+            item = artifactregistry_v1.Repository.serialize(repository)
+            f.write(len(item).to_bytes(4, byteorder="big") + item)
+
+    logging.info("Dumped repository data!")
+
+    packages = await list_packages(repository)
+    data_type_items = defaultdict(list)
+
+    async for package in packages:
+        name = os.path.basename(package.name)
+        logging.info(f"Looking for versions of {name} to dump...")
+        if args.format == "json":
+            data_type_items["Package"].append(
+                artifactregistry_v1.Package.to_dict(package)
+            )
+        if args.format == "bin":
+            data_type_items["Package"].append(
+                artifactregistry_v1.Package.serialize(package)
+            )
+        versions = await list_versions(package)
+        async for version in versions:
+            if args.format == "json":
+                data_type_items["Version"].append(
+                    artifactregistry_v1.Version.to_dict(version)
+                )
+            if args.format == "bin":
+                data_type_items["Version"].append(
+                    artifactregistry_v1.Version.serialize(version)
+                )
+
+    for data_type in data_type_items:
+        with open(
+            os.path.join(args.out_dir, f"{data_type.lower()}s.{args.format}"),
+            f"w{'b' if args.format == 'bin' else ''}",
+        ) as f:
+            if args.format == "json":
+                f.write(json.dumps(data_type_items[data_type], indent=2))
+            if args.format == "bin":
+                for item in data_type_items[data_type]:
+                    # Write the length of the item as a fixed-size integer before the item itself
+                    f.write(len(item).to_bytes(4, byteorder="big") + item)
+
+    end = time.time()
+    elapsed = int(end - start)
+    logging.info(
+        f"Done. Dumping data for {elapsed} seconds (that's about ~{elapsed // 60} minutes.)"
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description="mozilla-linux-pkg-manager")
     subparsers = parser.add_subparsers(
         dest="command",
         required=True,
-        help='Sub-commands (currently only "clean-up" is supported)',
+        help='Sub-commands ("clean-up", "dump-data")',
     )
 
     # Subparser for the 'clean-up' command
@@ -233,9 +338,43 @@ def main():
         default=False,
     )
 
+    # Subparser for the 'dump-data' command
+    dump_data_parser = subparsers.add_parser(
+        "dump-data",
+        help='Read and save the type entity data (Repository, Package, and Version) to files in "out-dir" serialized in the chosen "format"',
+    )
+    dump_data_parser.add_argument(
+        "--repository",
+        type=str,
+        help="",
+        required=True,
+    )
+    dump_data_parser.add_argument(
+        "--region",
+        type=str,
+        help="",
+        required=True,
+    )
+    dump_data_parser.add_argument(
+        "--out-dir",
+        type=str,
+        help="",
+        required=True,
+    )
+    dump_data_parser.add_argument(
+        "--format",
+        type=str,
+        help="",
+        required=True,
+    )
+
     args = parser.parse_args()
     logging.info(f"Parsed arguments:\nargs = {json.dumps(vars(args), indent=4)}")
 
     if args.command == "clean-up":
         asyncio.run(clean_up(args))
         logging.info("Done cleaning up!")
+
+    if args.command == "dump-data":
+        asyncio.run(dump_data(args))
+    logging.info("Done dumping data!")
