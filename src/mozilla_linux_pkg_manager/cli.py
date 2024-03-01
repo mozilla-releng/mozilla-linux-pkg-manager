@@ -59,7 +59,7 @@ async def batch_delete_versions(targets, args):
         batches = batched(targets[package], 50)
         for batch in batches:
             logging.info(
-                f"Deleting {format(len(batch), ',')} expired package versions of {os.path.basename(package)}..."
+                f"{'Would delete' if args.dry_run else 'Deleting'} {format(len(batch), ',')} expired package versions of {os.path.basename(package)}..."
             )
             request = artifactregistry_v1.BatchDeleteVersionsRequest(
                 parent=package,
