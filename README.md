@@ -4,8 +4,7 @@
 
 # mozilla-linux-pkg-manager
 
-`mozilla-releng/mozilla-linux-pkg-manager` is a Python tool for managing Mozilla product packages hosted in Linux software repositories hosted on Google Cloud Platform.
-It can be used to clean-up obsolete Firefox Nightly versions.
+`mozilla-releng/mozilla-linux-pkg-manager` is a Python tool for managing packages stored in Linux software repositories hosted on Google Cloud Platform.
 
 ## Requirements
 - Python 3.11 or higher
@@ -38,22 +37,45 @@ export GOOGLE_CLOUD_PROJECT=[PROJECT_NAME]
 ### Running `mozilla-linux-pkg-manager`
 To run `mozilla-linux-pkg-manager`, use Poetry with the following command:
 ```bash
-poetry run mozilla-linux-pkg-manager clean-up [-h] --product PRODUCT --channel CHANNEL --format FORMAT --repository REPOSITORY --region REGION [--retention-days RETENTION_DAYS] [--dry-run]
+poetry run mozilla-linux-pkg-manager clean-up [-h] --product PRODUCT --repository REPOSITORY --region REGION --retention-days RETENTION_DAYS [--dry-run]
 ```
+
 #### Parameters
-- `--product`: Specifies the Mozilla product to manage (e.g. `firefox`, `devedition`, `vpn`). Currently, only `firefox` is supported.
-- `--channel`: Specifies the package channel (e.g. `nightly`, `release`, `beta`). Currently, only `nightly` is supported.
-- `--format`: The package format (i.e. deb). Currently, only `deb` is supported.
-- `--retention-days`: Sets the retention period in days for packages in the nightly channel. This parameter is only supported on the `nightly` channel.
+- `--package`: A regular expression matching the name of the packages to clean-up.
+- `--retention-days`: Sets the retention period in days for packages that match the `package` regex.
 - `--dry-run`: Tells the script to do a no-op run and print out a summary of the operations that will be executed.
 - `--repository`: The repository to perform maintenance operations on.
 - `--region`: The cloud region the repository is hosted in.
 
-#### Example
-To clean up the nightly .deb packages that are older than 7 days:
-
+#### Examples
+Clean up firefox and firefox l10n .deb packages that are older than 365 days:
 ```bash
-poetry run mozilla-linux-pkg-manager clean-up --product firefox --channel nightly --format deb --retention-days 7 --repository mozilla --region us
+mozilla-linux-pkg-manager \
+clean-up \
+--package "^firefox(-l10n-.+)?$" \
+--retention-days 365 \
+--repository mozilla \
+--region us
+```
+
+Clean up firefox-nightly and firefox-nightly l10n .deb packages that are older than a day:
+```bash
+mozilla-linux-pkg-manager \
+clean-up \
+--package "^firefox-nightly(-l10n-.+)?$" \
+--retention-days 1 \
+--repository mozilla \
+--region us
+```
+
+Clean up firefox-devedition and firefox-devedition l10n .deb packages that are older than 60 days:
+```bash
+mozilla-linux-pkg-manager \
+clean-up \
+--package "^firefox-(devedition|beta)(-l10n-.+)?$" \
+--retention-days 60 \
+--repository mozilla \
+--region us
 ```
 
 ## Docker
@@ -69,9 +91,7 @@ docker run --rm \
 -v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/keys/google/key.json:ro \
 mozillareleases/mozilla-linux-pkg-manager:0.7.0 \
 clean-up \
---product firefox \
---channel nightly \
---format deb \
+--package "^firefox(-l10n-.+)?$" \
 --retention-days 3 \
 --repository [REPOSITORY] \
 --region [REGION] \
@@ -109,12 +129,11 @@ docker run \
 -v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/keys/google/key.json:ro \
 $IMAGE_NAME \
 clean-up \
---product firefox \
---channel nightly \
---format deb \
+--package "^firefox(-l10n-.+)?$" \
 --retention-days 3 \
 --repository mozilla \
---region us
+--region us \
+--dry-run
 ```
 
 In this command:
@@ -136,10 +155,3 @@ The `mozilla-linux-pkg-manager` package can be packaged into a wheel file for di
 
 ### Using the Installed Package
 After installation, the package can be used from anywhere on your system, provided you are running the Python interpreter where it was installed.
-
-#### Example
-To clean up nightly .deb packages that are older than 3 days:
-
-```bash
-mozilla-linux-pkg-manager clean-up --product firefox --channel nightly --format deb --retention-days 3 --repository mozilla --region us
-```
