@@ -48,7 +48,7 @@ poetry run mozilla-linux-pkg-manager clean-up [-h] --product PRODUCT --repositor
 - `--region`: The cloud region the repository is hosted in.
 
 #### Examples
-Clean up firefox and firefox l10n .deb packages that are older than 365 days:
+Clean up firefox and firefox l10n packages that are older than 365 days:
 ```bash
 mozilla-linux-pkg-manager \
 clean-up \
@@ -58,7 +58,7 @@ clean-up \
 --region us
 ```
 
-Clean up firefox-nightly and firefox-nightly l10n .deb packages that are older than a day:
+Clean up firefox-nightly and firefox-nightly l10n packages that are older than a day:
 ```bash
 mozilla-linux-pkg-manager \
 clean-up \
@@ -68,7 +68,7 @@ clean-up \
 --region us
 ```
 
-Clean up firefox-devedition and firefox-devedition l10n .deb packages that are older than 60 days:
+Clean up firefox-devedition and firefox-devedition l10n packages that are older than 60 days:
 ```bash
 mozilla-linux-pkg-manager \
 clean-up \
