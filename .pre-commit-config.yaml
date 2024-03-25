@@ -17,7 +17,7 @@ repos:
         entry: codespell -I .codespell-ignore-words.txt
         exclude: ^test/data/.*$
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.33.0
+    rev: v1.35.1
     hooks:
       - id: yamllint
   - repo: https://github.com/rstcheck/rstcheck
@@ -36,11 +36,11 @@ repos:
         additional_dependencies:
           - tomli
   - repo: https://github.com/psf/black
-    rev: 23.11.0
+    rev: 24.3.0
     hooks:
       - id: black
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.1
+    rev: v0.3.4
     hooks:
       - id: ruff
         args:
