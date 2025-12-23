@@ -5,8 +5,11 @@
 FROM python:3.9
 LABEL maintainer="Mozilla Release Engineering <release@mozilla.com>"
 
+VOLUME /builds/worker/checkouts
+VOLUME /builds/worker/.cache
+
 # Add worker user
-RUN mkdir /builds && \
+RUN mkdir -p /builds && \
     useradd -d /builds/worker -s /bin/bash -m worker && \
     mkdir -p /builds/worker/artifacts
 
@@ -18,9 +21,6 @@ RUN apt-get update && apt-get install -y --force-yes --no-install-recommends \
 ENV SHELL=/bin/bash \
     HOME=/builds/worker \
     PATH=/builds/worker/.local/bin:$PATH
-
-VOLUME /builds/worker/checkouts
-VOLUME /builds/worker/.cache
 
 # pyenv
 # %ARG PYENV_VERSIONS
