@@ -9,7 +9,7 @@ task-defaults:
     run:
         using: run-task
         cwd: '{checkout}'
-        use-caches: [checkout, pip]
+        use-caches: [checkout, uv]
 
 tasks:
     unit:
@@ -26,5 +26,4 @@ tasks:
                 TOX_PARALLEL_NO_SPINNER: "1"
         run:
             command: >-
-                poetry install --only test &&
-                poetry run tox --parallel
+                uv run tox

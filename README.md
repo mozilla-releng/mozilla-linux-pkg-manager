@@ -8,14 +8,14 @@
 
 ## Requirements
 - Python 3.11 or higher
-- Poetry (for dependency management)
+- uv (for dependency management)
 
 ## Development
 
 ### Installing `mozilla-linux-pkg-manager`
-1. **Install Poetry**: If not already installed, install Poetry by following the instructions from the [official Poetry website](https://python-poetry.org/docs/).
+1. **Install uv**: If not already installed, install uv by following the instructions from the [official uv website](https://docs.astral.sh/uv/).
 2. **Clone the Repository**: Clone the `mozilla-linux-pkg-manager` repository using the command `git clone https://github.com/mozilla-releng/mozilla-linux-pkg-manager.git`.
-3. **Install Dependencies**: Navigate to the repository's root directory and run `poetry install` to install the required dependencies.
+3. **Install Dependencies**: Navigate to the repository's root directory and run `uv sync` to install the required dependencies.
 
 ### Setup Authentication
 The easiest way to authenticate is using the Google Cloud SDK:
@@ -35,9 +35,9 @@ export GOOGLE_CLOUD_PROJECT=[PROJECT_NAME]
 ```
 
 ### Running `mozilla-linux-pkg-manager`
-To run `mozilla-linux-pkg-manager`, use Poetry with the following command:
+To run `mozilla-linux-pkg-manager`, use uv with the following command:
 ```bash
-poetry run mozilla-linux-pkg-manager clean-up [-h] --product PRODUCT --repository REPOSITORY --region REGION --retention-days RETENTION_DAYS [--dry-run]
+uv run mozilla-linux-pkg-manager clean-up [-h] --product PRODUCT --repository REPOSITORY --region REGION --retention-days RETENTION_DAYS [--dry-run]
 ```
 
 #### Parameters
@@ -147,7 +147,7 @@ The `mozilla-linux-pkg-manager` package can be packaged into a wheel file for di
 
 ### Building the Wheel
 1. **Navigate to the Project Directory**: Open your terminal and navigate to the directory where your project is located.
-2. **Build the Package**: Execute `poetry build` to create the wheel file. This will generate a `dist` folder in your project directory containing the `.whl` file, whose name may vary based on the version and build.
+2. **Build the Package**: Execute `uv tool run hatch build` to create the wheel file. This will generate a `dist` folder in your project directory containing the `.whl` file, whose name may vary based on the version and build.
 
 ### Installing the Wheel File
 1. **Navigate to the `dist` Directory**: Move to the `dist` directory where the `.whl` file is located.
