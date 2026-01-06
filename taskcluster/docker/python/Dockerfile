@@ -2,7 +2,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-FROM python:3.9
+ARG PYTHON_VERSION
+ARG UV_VERSION
+
+FROM ghcr.io/astral-sh/uv:${UV_VERSION}-python${PYTHON_VERSION}-trixie-slim
 LABEL maintainer="Mozilla Release Engineering <release@mozilla.com>"
 
 VOLUME /builds/worker/checkouts
@@ -21,18 +24,6 @@ RUN apt-get update && apt-get install -y --force-yes --no-install-recommends \
 ENV SHELL=/bin/bash \
     HOME=/builds/worker \
     PATH=/builds/worker/.local/bin:$PATH
-
-# pyenv
-# %ARG PYENV_VERSIONS
-ENV PYENV_ROOT=/builds/worker/.pyenv \
-    PATH=/builds/worker/.pyenv/bin:/builds/worker/.pyenv/shims:$PATH
-# %include taskcluster/scripts/pyenv-setup
-ADD topsrcdir/taskcluster/scripts/pyenv-setup /builds/worker/pyenv-setup
-RUN /builds/worker/pyenv-setup "$PYENV_VERSIONS"
-
-# %include taskcluster/scripts/poetry-setup
-ADD topsrcdir/taskcluster/scripts/poetry-setup /builds/worker/poetry-setup
-RUN /builds/worker/poetry-setup
 
 RUN chown -R worker:worker /builds/worker
 
