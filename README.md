@@ -100,19 +100,13 @@ clean-up \
 
 ### Building the Docker Image
 
-First, export the desired image name as an environment variable:
+You can build the Docker image locally with:
 
 ```bash
-export IMAGE_NAME=mozilla-linux-pkg-manager
+taskgraph build-image pkg-manager
 ```
 
-Then, build the Docker image:
-
-```bash
-docker buildx build --platform linux/amd64 -t $IMAGE_NAME .
-```
-
-This command builds a Docker image with the tag specified in `$IMAGE_NAME`, based on the instructions in the Dockerfile.
+This command builds a Docker image with the tag `pkg-manager:latest`.
 
 ### Running the Docker Container
 
@@ -155,3 +149,13 @@ The `mozilla-linux-pkg-manager` package can be packaged into a wheel file for di
 
 ### Using the Installed Package
 After installation, the package can be used from anywhere on your system, provided you are running the Python interpreter where it was installed.
+
+# Publish a new docker image
+
+After bumping the version and tagging it, find the `docker-image-pkg-manager` task for that commit, note it down as `TASK_ID`.
+You can then do:
+
+```
+taskgraph load-image --task-id=<TASK_ID> -t mozillareleases/mozilla-linux-pkg-manager:<VERSION>
+docker push mozillareleases/mozilla-linux-pkg-manager:<VERSION>
+```
