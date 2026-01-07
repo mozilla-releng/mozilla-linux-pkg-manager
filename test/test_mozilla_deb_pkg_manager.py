@@ -104,7 +104,8 @@ async def test_list_versions():
 
 
 @pytest.mark.asyncio
-async def test_batch_delete_versions():
+@pytest.mark.parametrize("dry_run", [True, False])
+async def test_batch_delete_versions(dry_run):
     mock_client = AsyncMock()
     mock_operation = AsyncMock()
     mock_client.batch_delete_versions.return_value = mock_operation
@@ -114,7 +115,7 @@ async def test_batch_delete_versions():
     version_names = [f"{package_name}/versions/42.0.{i}" for i in range(120)]
     tb_version_names = [f"{tb_package_name}/versions/42.0.{i}" for i in range(10)]
     targets = {package_name: set(version_names), tb_package_name: set(tb_version_names)}
-    args = Namespace(dry_run=True)
+    args = Namespace(dry_run=dry_run)
 
     with patch(
         "mozilla_linux_pkg_manager.cli.artifactregistry_v1.ArtifactRegistryAsyncClient",
@@ -131,7 +132,7 @@ async def test_batch_delete_versions():
         call_kwargs = call.kwargs
         expected_parent = package_name if expected_batch_size != 10 else tb_package_name
         assert call_kwargs["request"].parent == expected_parent
-        assert call_kwargs["request"].validate_only is True
+        assert call_kwargs["request"].validate_only is dry_run
         assert len(call_kwargs["request"].names) == expected_batch_size
         all_deleted_versions.update(call_kwargs["request"].names)
 
@@ -140,7 +141,8 @@ async def test_batch_delete_versions():
 
 
 @pytest.mark.asyncio
-async def test_clean_up():
+@pytest.mark.parametrize("dry_run", [True, False])
+async def test_clean_up(dry_run):
     async def async_iter(items):
         for item in items:
             yield item
@@ -165,7 +167,7 @@ async def test_clean_up():
     args = Namespace(
         package="^firefox$",
         retention_days=30,
-        dry_run=False,
+        dry_run=dry_run,
         skip_delete=False,
     )
 
