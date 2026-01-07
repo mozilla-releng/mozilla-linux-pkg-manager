@@ -21,7 +21,6 @@ dev = [
     "pytest",
     "pytest-asyncio",
     "pytest-mock",
-    "responses",
     "tox",
     "tox-uv",
 ]
