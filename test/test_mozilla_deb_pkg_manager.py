@@ -1,7 +1,8 @@
 import sys
 import types
 from argparse import Namespace
-from unittest.mock import AsyncMock, patch
+from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from google.cloud import artifactregistry_v1
@@ -9,6 +10,7 @@ from google.cloud import artifactregistry_v1
 import mozilla_linux_pkg_manager  # noqa
 from mozilla_linux_pkg_manager.cli import (
     batch_delete_versions,
+    clean_up,
     get_repository,
     list_packages,
     list_versions,
@@ -135,3 +137,65 @@ async def test_batch_delete_versions():
 
     assert all_deleted_versions == set(version_names) | set(tb_version_names)
     assert mock_operation.result.call_count == 4
+
+
+@pytest.mark.asyncio
+async def test_clean_up():
+    async def async_iter(items):
+        for item in items:
+            yield item
+
+    repo_name = "projects/test-project/locations/us-central1/repositories/my-repo"
+    package_name = f"{repo_name}/packages/firefox"
+    package_name_no_match = f"{repo_name}/packages/thunderbird"
+
+    mock_repository = artifactregistry_v1.Repository(name=repo_name)
+    mock_package = artifactregistry_v1.Package(name=package_name)
+    mock_package_no_match = artifactregistry_v1.Package(name=package_name_no_match)
+
+    now = datetime.now(UTC)
+    expired_version = MagicMock()
+    expired_version.name = f"{package_name}/versions/43.0.0"
+    expired_version.create_time = now - timedelta(days=100)
+
+    fresh_version = MagicMock()
+    fresh_version.name = f"{package_name}/versions/42.0.0"
+    fresh_version.create_time = now - timedelta(days=5)
+
+    args = Namespace(
+        package="^firefox$",
+        retention_days=30,
+        dry_run=False,
+        skip_delete=False,
+    )
+
+    with (
+        patch(
+            "mozilla_linux_pkg_manager.cli.get_repository",
+            return_value=mock_repository,
+        ),
+        patch(
+            "mozilla_linux_pkg_manager.cli.list_packages",
+            return_value=async_iter([mock_package, mock_package_no_match]),
+        ),
+        patch(
+            "mozilla_linux_pkg_manager.cli.list_versions",
+            return_value=async_iter([expired_version, fresh_version]),
+        ) as mock_list_versions,
+        patch(
+            "mozilla_linux_pkg_manager.cli.batch_delete_versions",
+        ) as mock_batch_delete,
+    ):
+        await clean_up(args)
+
+    # list_versions should only be called for matching package (firefox, not thunderbird in this case)
+    mock_list_versions.assert_called_once_with(mock_package)
+
+    mock_batch_delete.assert_called_once()
+    call_args = mock_batch_delete.call_args
+    targets = call_args[0][0]
+
+    assert package_name in targets
+    assert package_name_no_match not in targets
+    assert targets[package_name] == {expired_version.name}
+    assert call_args[0][1] == args
