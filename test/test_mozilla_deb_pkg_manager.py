@@ -5,6 +5,10 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+import requests
+import requests.exceptions as requests_exceptions
+from google.api_core import exceptions as api_exceptions
+from google.auth import exceptions as auth_exceptions
 from google.cloud import artifactregistry_v1
 
 import mozilla_linux_pkg_manager  # noqa
@@ -14,6 +18,7 @@ from mozilla_linux_pkg_manager.cli import (
     get_repository,
     list_packages,
     list_versions,
+    should_retry,
 )
 
 
@@ -201,3 +206,26 @@ async def test_clean_up(dry_run):
     assert package_name_no_match not in targets
     assert targets[package_name] == {expired_version.name}
     assert call_args[0][1] == args
+
+
+@pytest.mark.parametrize(
+    "exc,expected",
+    [
+        (api_exceptions.TooManyRequests(""), True),
+        (api_exceptions.InternalServerError(""), True),
+        (api_exceptions.BadGateway(""), True),
+        (api_exceptions.ServiceUnavailable(""), True),
+        (api_exceptions.GatewayTimeout(""), True),
+        (ConnectionError(""), True),
+        (requests.ConnectionError(""), True),
+        (requests_exceptions.ChunkedEncodingError(""), True),
+        (requests_exceptions.Timeout(""), True),
+        (MagicMock(spec=api_exceptions.GoogleAPICallError, code=408), True),
+        (MagicMock(spec=api_exceptions.GoogleAPICallError, code=404), False),
+        (auth_exceptions.TransportError(ConnectionError("")), True),
+        (auth_exceptions.TransportError(ValueError("")), False),
+        (ValueError(""), False),
+    ],
+)
+def test_should_retry(exc, expected):
+    assert should_retry(exc) is expected
