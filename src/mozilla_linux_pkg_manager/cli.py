@@ -77,9 +77,9 @@ async def batch_delete_versions(targets, args):
     )
 
 
-async def get_repository(args):
+async def get_repository(region, repository_name):
     client = artifactregistry_v1.ArtifactRegistryAsyncClient()
-    parent = f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{args.region}/repositories/{args.repository}"
+    parent = f"projects/{os.environ['GOOGLE_CLOUD_PROJECT']}/locations/{region}/repositories/{repository_name}"
     get_repository_request = artifactregistry_v1.GetRepositoryRequest(
         name=parent,
     )
@@ -110,12 +110,6 @@ async def list_versions(package):
 
 
 async def clean_up(args):
-    logging.info("Pinging repository...")
-    repository = await get_repository(args)
-    logging.info(
-        f"Found repository:\nrepository = {json.dumps(artifactregistry_v1.Repository.to_dict(repository), indent=4)}"
-    )
-    packages = await list_packages(repository)
     now = datetime.now(UTC)
     targets = defaultdict(set)
     pattern = re.compile(args.package)
@@ -124,16 +118,24 @@ async def clean_up(args):
 
     start = time.time()
 
-    async for package in packages:
-        name = os.path.basename(package.name)
-        if pattern.match(name):
-            logging.info(f"Looking for expired package versions of {name}...")
-            versions = await list_versions(package)
-            async for version in versions:
-                all_versions.add(version.name)
-                if now - version.create_time > timedelta(days=args.retention_days):
-                    targets[package.name].add(version.name)
-                    unique_expired_versions.add(os.path.basename(version.name))
+    for repository_name in args.repository:
+        logging.info(f"Pinging repository '{repository_name}'...")
+        repository = await get_repository(args.region, repository_name)
+        logging.info(
+            f"Found repository:\nrepository = {json.dumps(artifactregistry_v1.Repository.to_dict(repository), indent=4)}"
+        )
+        packages = await list_packages(repository)
+
+        async for package in packages:
+            name = os.path.basename(package.name)
+            if pattern.match(name):
+                logging.info(f"Looking for expired package versions of {name}...")
+                versions = await list_versions(package)
+                async for version in versions:
+                    all_versions.add(version.name)
+                    if now - version.create_time > timedelta(days=args.retention_days):
+                        targets[package.name].add(version.name)
+                        unique_expired_versions.add(os.path.basename(version.name))
 
     end = time.time()
     elapsed = int(end - start)
@@ -193,7 +195,8 @@ def main():
     clean_up_parser.add_argument(
         "--repository",
         type=str,
-        help="",
+        nargs="+",
+        help="One or more repository names to clean up",
         required=True,
     )
     clean_up_parser.add_argument(

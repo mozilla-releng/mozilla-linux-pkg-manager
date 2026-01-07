@@ -37,14 +37,14 @@ export GOOGLE_CLOUD_PROJECT=[PROJECT_NAME]
 ### Running `mozilla-linux-pkg-manager`
 To run `mozilla-linux-pkg-manager`, use uv with the following command:
 ```bash
-uv run mozilla-linux-pkg-manager clean-up [-h] --product PRODUCT --repository REPOSITORY --region REGION --retention-days RETENTION_DAYS [--dry-run]
+uv run mozilla-linux-pkg-manager clean-up [-h] --package PACKAGE --repository REPOSITORY [REPOSITORY ...] --region REGION --retention-days RETENTION_DAYS [--dry-run]
 ```
 
 #### Parameters
 - `--package`: A regular expression matching the name of the packages to clean-up.
 - `--retention-days`: Sets the retention period in days for packages that match the `package` regex.
 - `--dry-run`: Tells the script to do a no-op run and print out a summary of the operations that will be executed.
-- `--repository`: The repository to perform maintenance operations on.
+- `--repository`: One or more repositories to perform maintenance operations on.
 - `--region`: The cloud region the repository is hosted in.
 
 #### Examples
