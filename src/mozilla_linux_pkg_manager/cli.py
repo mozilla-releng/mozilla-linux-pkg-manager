@@ -7,7 +7,7 @@ import re
 import time
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
-from itertools import islice
+from itertools import batched
 
 import requests
 import requests.exceptions as requests_exceptions
@@ -87,18 +87,6 @@ async def get_repository(args):
         request=get_repository_request, retry=ASYNC_RETRY
     )
     return repository
-
-
-def batched(iterable, n):
-    "Batch data into tuples of length n. The last batch may be shorter."
-    # batched('ABCDEFG', 3) --> ABC DEF G
-    if n < 1:
-        raise ValueError("n must be at least one")
-    it = iter(iterable)
-    batch = tuple(islice(it, n))
-    while batch:
-        yield batch
-        batch = tuple(islice(it, n))
 
 
 async def list_packages(repository):
