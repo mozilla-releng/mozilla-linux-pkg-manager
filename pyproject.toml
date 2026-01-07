@@ -19,6 +19,7 @@ dependencies = [
 dev = [
     "coverage",
     "pytest",
+    "pytest-asyncio",
     "pytest-mock",
     "responses",
     "tox",
@@ -39,6 +40,7 @@ line-length = 88
 
 [tool.pytest.ini_options]
 xfail_strict = true
+asyncio_mode = "auto"
 
 [tool.coverage.run]
 parallel = true
