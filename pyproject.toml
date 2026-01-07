@@ -24,11 +24,6 @@ dev = [
     "tox",
     "tox-uv",
 ]
-docs = [
-    "sphinx<7",
-    "sphinx-autobuild",
-    "sphinx-book-theme",
-]
 
 [project.scripts]
 mozilla-linux-pkg-manager = "mozilla_linux_pkg_manager.cli:main"
