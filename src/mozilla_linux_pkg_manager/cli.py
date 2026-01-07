@@ -199,7 +199,7 @@ def main():
     clean_up_parser.add_argument(
         "--package",
         type=str,
-        help='The name of the packages to clean-up (ex. "firefox-nightly-*")',
+        help='A regex that matches the name of the packages to clean-up (ex. "firefox-nightly-.*")',
         required=True,
     )
     clean_up_parser.add_argument(
