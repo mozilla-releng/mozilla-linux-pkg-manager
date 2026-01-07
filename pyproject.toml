@@ -1,6 +1,6 @@
 [project]
 name = "mozilla-linux-pkg-manager"
-version = "1.0.0"
+version = "1.1.0"
 description = "`mozilla-releng/mozilla-linux-pkg-manager` is a Python tool for managing Mozilla `.deb` packages."
 authors = [
   {name = "Mozilla Release Engineering", email = "release@mozilla.com"}
